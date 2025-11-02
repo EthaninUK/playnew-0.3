@@ -1,0 +1,77 @@
+{
+  "name": "ChainCatcher News Flash Scraper (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.chaincatcher.com/news",
+        "options": {}
+      },
+      "id": "http-request-chaincatcher",
+      "name": "Fetch ChainCatcher Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract newsFlashList from window.__NUXT__ data\n// Access the HTML from the correct path\nconst html = $input.item.json.data || $input.item.json.body || JSON.stringify($input.item.json);\n\nif (!html || typeof html !== 'string') {\n  throw new Error('No HTML content found. Got: ' + typeof html);\n}\n\n// Find the window.__NUXT__ script content\nconst scriptMatch = html.match(/window\\.__NUXT__=(.*?);?\\s*<\\/script>/s);\n\nif (!scriptMatch) {\n  throw new Error('Could not find window.__NUXT__ script');\n}\n\nconst scriptCode = scriptMatch[1];\n\n// Execute the script to get the data\nconst vm = require('vm');\nconst sandbox = { window: {} };\nvm.createContext(sandbox);\n\ntry {\n  vm.runInContext(`window.__NUXT__ = ${scriptCode}`, sandbox);\n} catch (e) {\n  throw new Error('Failed to execute script: ' + e.message);\n}\n\nconst nuxtData = sandbox.window.__NUXT__;\n\nif (!nuxtData || !nuxtData.data || !nuxtData.data[0] || !nuxtData.data[0].newsFlashList) {\n  throw new Error('Could not find newsFlashList in window.__NUXT__');\n}\n\nconst newsFlashList = nuxtData.data[0].newsFlashList;\n\n// Process items (take first 10)\nconst items = [];\nconst maxItems = Math.min(10, newsFlashList.length);\n\nfor (let i = 0; i < maxItems; i++) {\n  const item = newsFlashList[i];\n\n  // Extract source from description\n  let source = 'ChainCatcher';\n  if (item.description) {\n    const sourceMatch = item.description.match(/据\\s*([A-Za-z0-9\\s\\.]+)\\s*(?:数据|报道|消息|官方)/);\n    if (sourceMatch) {\n      source = sourceMatch[1].trim();\n    }\n  }\n\n  // Format published_at\n  let publishedAt = item.releaseTime || item.createTime || new Date().toISOString();\n  if (publishedAt && !publishedAt.includes('T')) {\n    publishedAt = publishedAt.replace(' ', 'T') + '.000Z';\n  }\n\n  items.push({\n    json: {\n      title: item.title || 'Untitled',\n      content: item.description || item.title || '',\n      summary: (item.description || item.title || '').length > 200\n        ? (item.description || item.title).substring(0, 197) + '...'\n        : (item.description || item.title),\n      url: `https://www.chaincatcher.com/article/${item.id}`,\n      published_at: publishedAt,\n      source: source,\n      source_type: 'rss',\n      category: 'news',\n      status: 'published',\n      view_count: 0,\n      is_featured: item.isHot === 1\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "code-extract-news",
+      "name": "Extract News Flash Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8055/items/news",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "http-save-to-directus",
+      "name": "Save to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "directus-token",
+          "name": "Directus API Token"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Fetch ChainCatcher Page": {
+      "main": [
+        [
+          {
+            "node": "Extract News Flash Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract News Flash Data": {
+      "main": [
+        [
+          {
+            "node": "Save to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

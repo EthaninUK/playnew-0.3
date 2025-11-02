@@ -1,0 +1,68 @@
+{
+  "name": "ChainCatcher News Flash Scraper",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.chaincatcher.com/news",
+        "options": {}
+      },
+      "id": "cc1a0f00-3e5a-4f3d-b1b5-7c8f5e3d9a8c",
+      "name": "Fetch ChainCatcher Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract newsFlashList from window.__NUXT__ data\nconst html = $input.item.json.body;\n\n// Find the window.__NUXT__ script content\nconst nuxtMatch = html.match(/window\\.__NUXT__=\\(function.*?return ({[\\s\\S]*?})\\}\\)\\((.*?)\\);/);\n\nif (!nuxtMatch) {\n  throw new Error('Could not find window.__NUXT__ data');\n}\n\n// Extract the data - it's in a complex format\n// The newsFlashList is in the data structure\nconst dataMatch = html.match(/newsFlashList:\\[(\\{[\\s\\S]*?\\}(?:,\\{[\\s\\S]*?\\})*)\\]/);\n\nif (!dataMatch) {\n  throw new Error('Could not find newsFlashList');\n}\n\n// Use a simpler approach: extract key information using regex\nconst titleMatches = [...html.matchAll(/title:\"([^\"]+?(?:数据|消息|官方|报道|消息)[^\"]*?)\"/g)];\nconst descMatches = [...html.matchAll(/description:\"(ChainCatcher [^\"]+)\"/g)];\nconst timeMatches = [...html.matchAll(/releaseTime:([a-z]),/g)];\nconst idMatches = [...html.matchAll(/id:(\\d{7}),/g)];\n\n// Map time variables from the function parameters\nconst timeVarsMatch = html.match(/\\)\\(([^)]+)\\);$/);\nif (!timeVarsMatch) {\n  throw new Error('Could not extract time variables');\n}\n\nconst timeValues = timeVarsMatch[1].split(',').map(v => {\n  v = v.trim();\n  // Remove quotes if present\n  if (v.startsWith('\"') && v.endsWith('\"')) {\n    return v.slice(1, -1);\n  }\n  return v;\n});\n\n// Create a mapping of variable letters to values\nconst timeMap = {};\nconst letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');\nfor (let i = 0; i < Math.min(letters.length, timeValues.length); i++) {\n  timeMap[letters[i]] = timeValues[i];\n}\n\nconst items = [];\nconst maxItems = Math.min(10, titleMatches.length);\n\nfor (let i = 0; i < maxItems; i++) {\n  if (!titleMatches[i] || !descMatches[i]) continue;\n  \n  const title = titleMatches[i][1];\n  const description = descMatches[i][1];\n  const timeVar = timeMatches[i] ? timeMatches[i][1] : null;\n  const releaseTime = timeVar ? timeMap[timeVar] : new Date().toISOString();\n  const articleId = idMatches[i] ? idMatches[i][1] : `temp-${i}`;\n  \n  // Extract keywords from description\n  const keywordsMatch = description.match(/据.*?([A-Za-z0-9\\s]+).*?(?:数据|报道|消息)/);\n  const source = keywordsMatch ? keywordsMatch[1].trim() : 'ChainCatcher';\n  \n  items.push({\n    json: {\n      id: articleId,\n      title: title,\n      content: description,\n      summary: description.substring(0, 200),\n      url: `https://www.chaincatcher.com/article/${articleId}`,\n      published_at: releaseTime,\n      source: source,\n      category: 'news',\n      status: 'published',\n      view_count: 0,\n      is_featured: false\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "cc2b1f10-4e6a-5f4d-c2c6-8d9f6e4d0b9d",
+      "name": "Extract News Flash Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8055/items/news",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "directusApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "cc3c2f20-5f7a-6f5d-d3d7-9e0f7e5d1c0e",
+      "name": "Save to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Fetch ChainCatcher Page": {
+      "main": [
+        [
+          {
+            "node": "Extract News Flash Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract News Flash Data": {
+      "main": [
+        [
+          {
+            "node": "Save to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

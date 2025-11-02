@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fixed API</title>
+</head>
+<body>
+    <h1>Testing Fixed API</h1>
+    <div id="result">Loading...</div>
+
+    <script>
+        fetch('http://localhost:3000/api/subscription')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                console.log('API Response:', data);
+            })
+            .catch(err => {
+                document.getElementById('result').innerHTML = 'Error: ' + err.message;
+                console.error('Error:', err);
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+const { Client } = require('pg');
+
+const client = new Client({
+  connectionString: 'postgresql://postgres.cujpgrzjmmttysphjknu:bi3d8FpBFTUWuwOb@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres',
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+async function verifyCategories() {
+  try {
+    await client.connect();
+    console.log('✅ Connected to database\n');
+
+    // Get category distribution
+    const query = `
+      SELECT
+        c.name as category_name,
+        c.slug as category_slug,
+        c.icon as category_icon,
+        COUNT(s.id) as strategy_count
+      FROM playnew_categories c
+      LEFT JOIN strategies s ON s.category = c.id AND s.status = 'published'
+      WHERE c.parent_id IS NOT NULL
+      GROUP BY c.id, c.name, c.slug, c.icon, c.order_index
+      ORDER BY c.order_index;
+    `;
+
+    const result = await client.query(query);
+
+    console.log('📊 Strategy Distribution by Category:\n');
+    console.log('=' .repeat(60));
+
+    let total = 0;
+    result.rows.forEach(row => {
+      if (row.strategy_count > 0) {
+        console.log(`${row.category_icon} ${row.category_name.padEnd(20)} (${row.category_slug.padEnd(25)}): ${row.strategy_count} strategies`);
+        total += parseInt(row.strategy_count);
+      }
+    });
+
+    console.log('=' .repeat(60));
+    console.log(`Total: ${total} strategies categorized\n`);
+
+    // Check for uncategorized strategies
+    const uncategorizedQuery = `
+      SELECT COUNT(*) as count
+      FROM strategies
+      WHERE status = 'published' AND category IS NULL;
+    `;
+    const uncategorized = await client.query(uncategorizedQuery);
+
+    if (uncategorized.rows[0].count > 0) {
+      console.log(`⚠️  Warning: ${uncategorized.rows[0].count} strategies are not categorized\n`);
+    } else {
+      console.log('✅ All published strategies are properly categorized!\n');
+    }
+
+    // Show empty categories
+    console.log('\n📝 Categories with no strategies:');
+    result.rows.forEach(row => {
+      if (row.strategy_count == 0) {
+        console.log(`  - ${row.category_icon} ${row.category_name} (${row.category_slug})`);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+  } finally {
+    await client.end();
+  }
+}
+
+verifyCategories();

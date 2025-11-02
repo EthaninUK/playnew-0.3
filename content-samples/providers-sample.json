@@ -1,0 +1,141 @@
+[
+  {
+    "name": "Aave",
+    "slug": "aave-v3",
+    "category": "借贷协议",
+    "description": "Aave 是最大的去中心化借贷协议之一，支持多链部署，提供存款赚息、抵押借贷、闪电贷等功能。V3 版本引入了高效模式和隔离模式，提升资金效率和安全性。",
+    "logo_url": "https://cryptologos.cc/logos/aave-aave-logo.png",
+    "website": "https://aave.com",
+    "twitter": "https://twitter.com/aaveaave",
+    "discord": "https://discord.gg/aave",
+    "documentation": "https://docs.aave.com",
+    "rating": 4.8,
+    "tvl": "5000000000",
+    "supported_chains": ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Avalanche", "Base"],
+    "fees": "存款年化收益 2-8%，借贷年化利率 3-12%（浮动），闪电贷手续费 0.09%",
+    "security_audits": ["Trail of Bits", "OpenZeppelin", "Consensys Diligence", "ABDK", "Peckshield"],
+    "launch_date": "2020-01-08",
+    "token_symbol": "AAVE",
+    "governance": "AAVE 代币持有者通过链上治理投票决定协议参数",
+    "insurance": "通过安全模块（Safety Module）提供协议保险，用户质押 AAVE/stkAAVE 作为缓冲资金",
+    "pros": [
+      "最成熟的借贷协议之一，TVL 超 50 亿美元",
+      "支持 6 条主流 EVM 链，资产选择丰富",
+      "V3 引入高效模式（E-Mode），同类资产借贷效率提升",
+      "闪电贷功能强大，支持无抵押套利和清算",
+      "多家顶级机构审计，安全记录良好",
+      "活跃的社区治理和持续的协议升级"
+    ],
+    "cons": [
+      "高效模式仅适用于同类资产（如稳定币），限制了灵活性",
+      "以太坊主网 Gas 费用较高，小额资金成本占比大",
+      "部分高收益资产存在清算风险",
+      "闪电贷被黑客利用进行攻击的案例（虽非协议本身漏洞）"
+    ],
+    "use_cases": [
+      "存入稳定币或 ETH 赚取被动收益（年化 2-8%）",
+      "使用 ETH 作为抵押品借出稳定币用于投资",
+      "通过高效模式提升稳定币借贷资金利用率",
+      "使用闪电贷进行套利、清算或协议迁移",
+      "多链部署降低 Gas 成本（在 Polygon、Arbitrum 等 L2 使用）"
+    ],
+    "competitors": ["Compound", "MakerDAO", "JustLend", "Venus"],
+    "integration_guide": "# Aave 集成指南\n\n## 快速开始\n\n### 1. 连接钱包并选择网络\n\n访问 [Aave App](https://app.aave.com)，连接支持的钱包（MetaMask、WalletConnect 等），并选择目标网络（推荐 Arbitrum 或 Polygon 降低 Gas 费）。\n\n### 2. 存款赚息（Supply）\n\n**步骤：**\n1. 点击 \"Supply\" 选项卡\n2. 选择要存入的资产（如 USDC、USDT、ETH）\n3. 输入金额，点击 \"Supply\"\n4. 确认钱包交易\n5. 存款成功后，立即开始赚取利息（每个区块更新）\n\n**收益说明：**\n- 存款自动赚取浮动年化收益（APY）\n- 收到 aToken（如 aUSDC），代表存款凭证\n- aToken 余额自动增长，反映利息累积\n\n### 3. 抵押借贷（Borrow）\n\n**步骤：**\n1. 先完成存款（步骤 2）\n2. 在存款资产右侧点击 \"Collateral\" 开关，启用抵押\n3. 切换到 \"Borrow\" 选项卡\n4. 选择要借出的资产（如借 USDC）\n5. 选择利率模式：\n   - **Stable Rate**（稳定利率）：固定利率，适合长期借贷\n   - **Variable Rate**（浮动利率）：跟随市场波动，通常更低\n6. 输入借款金额（注意健康系数 Health Factor 需 >1.0）\n7. 确认交易\n\n**风险提示：**\n- **健康系数（Health Factor）**：当 <1.0 时会被清算\n- 保守策略：将健康系数维持在 2.0 以上\n- 借款需支付利息，实时累积\n- 抵押率（LTV）因资产而异，ETH 约 80%，稳定币可达 90%\n\n### 4. 高效模式（E-Mode）进阶使用\n\n**适用场景：** 同类资产借贷（如稳定币互借，或 ETH 衍生品互借）\n\n**步骤：**\n1. 在 Dashboard 右上角点击 \"E-Mode\" 按钮\n2. 选择资产类别（如 \"Stablecoins\" 或 \"ETH correlated\"）\n3. 启用后，同类资产的抵押率显著提升（最高可达 97%）\n4. 可用更少抵押品借出更多资金\n\n**示例：**\n- 普通模式：存 1000 USDC，最多借 800 USDC（LTV 80%）\n- E-Mode：存 1000 USDC，最多借 970 USDC（LTV 97%）\n\n**注意：** E-Mode 仅适用于同类资产，如存 USDC 借 DAI，不能跨类别\n\n### 5. 闪电贷（Flash Loan）开发者功能\n\n**概念：** 无抵押贷款，但必须在同一交易内归还本金+手续费（0.09%）\n\n**用途：**\n- 套利：跨交易所价差套利\n- 清算：快速清算抵押不足的头寸\n- 协议迁移：无缝迁移资金到其他协议\n\n**代码示例（Solidity）：**\n```solidity\nimport {IPoolAddressesProvider} from '@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol';\nimport {IPool} from '@aave/core-v3/contracts/interfaces/IPool.sol';\nimport {IERC20} from '@aave/core-v3/contracts/dependencies/openzeppelin/contracts/IERC20.sol';\n\ncontract FlashLoanExample {\n    IPoolAddressesProvider public ADDRESSES_PROVIDER;\n    IPool public POOL;\n    \n    constructor(address _addressProvider) {\n        ADDRESSES_PROVIDER = IPoolAddressesProvider(_addressProvider);\n        POOL = IPool(ADDRESSES_PROVIDER.getPool());\n    }\n    \n    function executeFlashLoan(address asset, uint256 amount) external {\n        address receiverAddress = address(this);\n        address[] memory assets = new address[](1);\n        assets[0] = asset;\n        \n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = amount;\n        \n        uint256[] memory modes = new uint256[](1);\n        modes[0] = 0; // 0 = no debt, 1 = stable, 2 = variable\n        \n        bytes memory params = \"\";\n        uint16 referralCode = 0;\n        \n        POOL.flashLoan(\n            receiverAddress,\n            assets,\n            amounts,\n            modes,\n            address(this),\n            params,\n            referralCode\n        );\n    }\n    \n    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        // 在此执行套利逻辑\n        // ...\n        \n        // 归还贷款 + 手续费\n        for (uint256 i = 0; i < assets.length; i++) {\n            uint256 amountOwing = amounts[i] + premiums[i];\n            IERC20(assets[i]).approve(address(POOL), amountOwing);\n        }\n        \n        return true;\n    }\n}\n```\n\n## 安全最佳实践\n\n### 1. 健康系数管理\n- **设置预警**：使用 [DeFi Saver](https://defisaver.com) 或 [Instadapp](https://instadapp.io) 设置自动监控\n- **保守策略**：健康系数维持在 2.0 以上，避免市场波动清算\n- **及时补仓**：当健康系数 <1.5 时，及时追加抵押品或归还部分借款\n\n### 2. 利率选择策略\n- **稳定利率（Stable）**：适合长期借贷，锁定成本\n- **浮动利率（Variable）**：通常更低，但需承受市场波动风险\n- **混合策略**：部分借款使用稳定利率，部分使用浮动利率\n\n### 3. 网络选择建议\n- **以太坊主网**：TVL 最高，安全性最强，但 Gas 费昂贵（适合大额资金）\n- **Arbitrum / Optimism**：L2 方案，Gas 费低 95%，适合中小额资金\n- **Polygon**：Gas 费极低，但跨链桥安全风险稍高\n- **Avalanche**：高性能，Gas 费适中\n\n### 4. 资产选择\n- **低风险**：主流稳定币（USDC、USDT、DAI）、ETH、WBTC\n- **中风险**：主流 Layer 1 代币（AVAX、MATIC）\n- **高风险**：避免使用小市值代币作为抵押品，清算风险高\n\n## 常见问题\n\n### Q1: 存款后何时开始赚取利息？\n**A:** 立即开始，每个区块（约 12 秒）更新一次。aToken 余额会自动增长。\n\n### Q2: 如何提取存款？\n**A:** 在 Dashboard 点击 \"Withdraw\"，输入金额，确认交易即可。注意：如果资金被用作抵押品，需确保提取后健康系数仍 >1.0。\n\n### Q3: 稳定利率和浮动利率可以切换吗？\n**A:** 可以，在 \"Borrow\" 界面点击 \"APR Type\" 即可切换（部分资产支持）。\n\n### Q4: 被清算后会损失多少？\n**A:** 清算罚金通常为 5-10%（因资产而异）。例如健康系数 <1.0 时，清算机器人会偿还你的部分债务，并以折扣价获得你的抵押品。\n\n### Q5: 如何降低 Gas 费？\n**A:** 使用 Layer 2（Arbitrum、Optimism）或侧链（Polygon、Avalanche），Gas 费可降低 90% 以上。\n\n### Q6: AAVE 代币有什么用？\n**A:** \n- 质押在安全模块（Safety Module）赚取奖励（年化 5-8%）\n- 参与协议治理投票\n- 未来可能获得协议收入分成\n\n## 进阶策略\n\n### 策略 1: 稳定币循环借贷（Looping）\n1. 存入 1000 USDC\n2. 启用 E-Mode（Stablecoins）\n3. 借出 900 USDC（LTV 90%）\n4. 将借出的 900 USDC 再次存入\n5. 重复 2-3 次\n\n**收益倍增原理：** 通过循环放大存款规模，提升总收益（需注意清算风险和借贷利差）\n\n### 策略 2: Delta 中性对冲\n1. 存入 10 ETH 作为抵押\n2. 借出等值的 ETH 做空（通过 DEX 卖出为稳定币）\n3. 无论 ETH 涨跌，总价值保持中性\n4. 赚取存款利息 - 借款利息的利差\n\n### 策略 3: 跨链套利\n1. 在 Polygon 存入 USDC（年化 6%）\n2. 在以太坊主网借出 USDC（年化 4%）\n3. 利用跨链桥转移资金\n4. 赚取 2% 利差（需扣除 Gas 和跨链手续费）\n\n## 风险提示\n\n⚠️ **智能合约风险**：尽管 Aave 经过多次审计,仍存在潜在漏洞风险  \n⚠️ **清算风险**：市场剧烈波动时可能被清算，损失 5-10% 罚金  \n⚠️ **利率波动**：浮动利率可能突然上升，增加借贷成本  \n⚠️ **跨链桥风险**：使用跨链桥转移资金时，存在桥合约被攻击风险  \n⚠️ **预言机风险**：价格预言机故障可能导致错误清算  \n\n## 相关资源\n\n- [Aave 官方文档](https://docs.aave.com)\n- [风险参数仪表板](https://app.aave.com/risk)\n- [治理论坛](https://governance.aave.com)\n- [审计报告](https://docs.aave.com/developers/security-and-audits)\n- [Discord 社区](https://discord.gg/aave)\n\n---\n\n**最后更新:** 2024年1月",
+    "status": "published",
+    "view_count": 0,
+    "favorite_count": 0
+  },
+  {
+    "name": "1inch",
+    "slug": "1inch-dex-aggregator",
+    "category": "DEX聚合器",
+    "description": "1inch 是领先的 DEX 聚合器，通过智能路由算法在多个去中心化交易所中寻找最优价格，帮助用户以最低滑点完成交易。支持 10+ 条链，聚合 200+ DEX。",
+    "logo_url": "https://cryptologos.cc/logos/1inch-1inch-logo.png",
+    "website": "https://1inch.io",
+    "twitter": "https://twitter.com/1inch",
+    "discord": "https://discord.gg/1inch",
+    "documentation": "https://docs.1inch.io",
+    "rating": 4.6,
+    "tvl": "800000000",
+    "supported_chains": ["Ethereum", "BSC", "Polygon", "Arbitrum", "Optimism", "Avalanche", "Gnosis", "Fantom", "Klaytn", "Aurora"],
+    "fees": "交易无额外手续费（仅链上 Gas），部分高级功能收取 0.1-0.3% 服务费",
+    "security_audits": ["OpenZeppelin", "Consensys Diligence", "Pessimistic", "Ackee Blockchain"],
+    "launch_date": "2019-12-25",
+    "token_symbol": "1INCH",
+    "governance": "1INCH 代币持有者通过 DAO 投票决定协议发展方向",
+    "insurance": "部分资金通过 Nexus Mutual 等保险协议承保",
+    "pros": [
+      "聚合 200+ DEX，确保最优交易价格",
+      "智能路由算法自动拆单，降低滑点和 MEV 损失",
+      "支持 10 条主流区块链，覆盖最广泛",
+      "Fusion Mode（融合模式）提供零 Gas 交易体验",
+      "Limit Order 功能支持限价单交易",
+      "多家顶级机构审计，安全记录良好"
+    ],
+    "cons": [
+      "复杂路由可能增加 Gas 费用（多跳交易）",
+      "部分小币种流动性不足，价格优势不明显",
+      "Fusion Mode 仅支持部分代币和网络",
+      "API 调用有速率限制，高频交易受限"
+    ],
+    "use_cases": [
+      "大额交易降低滑点，节省数百至数千美元",
+      "跨 DEX 套利，捕捉价格差异",
+      "使用 Fusion Mode 实现零 Gas 交易（解决器代付）",
+      "设置限价单，等待目标价格成交",
+      "流动性挖矿：向 1inch 流动性池提供流动性赚取手续费"
+    ],
+    "competitors": ["Matcha", "Paraswap", "CowSwap", "Jupiter (Solana)", "KyberSwap"],
+    "integration_guide": "# 1inch 使用指南\n\n## 快速开始\n\n### 1. 连接钱包\n\n访问 [1inch.io](https://app.1inch.io)，点击右上角 \"Connect Wallet\"，选择支持的钱包（MetaMask、WalletConnect、Coinbase Wallet 等）。\n\n### 2. 基础交易（Swap）\n\n**步骤：**\n1. 选择源代币（如 ETH）和目标代币（如 USDC）\n2. 输入交易金额\n3. 查看路由详情：\n   - 多个 DEX 的价格对比\n   - 最优路由路径（可能跨多个 DEX）\n   - 预估 Gas 费用\n   - 滑点设置（默认 1%，可自定义）\n4. 点击 \"Swap\"，确认钱包交易\n5. 等待交易确认（通常 15-60 秒）\n\n**价格优势示例：**\n- Uniswap 直接交易：1 ETH = 1,800 USDC\n- 1inch 路由（Uniswap + SushiSwap）：1 ETH = 1,812 USDC\n- **节省：** 12 USDC（0.67%）\n\n### 3. Fusion Mode（零 Gas 交易）\n\n**原理：** 将交易订单发送到链下，由专业「解决器」(Resolver) 竞价执行，用户无需支付 Gas 费（解决器从价格改善中获利）。\n\n**步骤：**\n1. 在交易界面切换到 \"Fusion\" 模式\n2. 输入交易金额\n3. 设置最低接受价格（默认自动优化）\n4. 签名订单（无需支付 Gas）\n5. 等待解决器执行（通常 30-90 秒）\n\n**适用场景：**\n- ✅ 中大额交易（$1000+）\n- ✅ 非紧急交易（可等待 1-2 分钟）\n- ✅ Gas 费高昂时（以太坊主网拥堵期）\n- ❌ 小额交易（解决器无利可图，可能不执行）\n- ❌ 极端市场波动（可能无法成交）\n\n**注意：** Fusion Mode 目前仅支持以太坊、Polygon、Arbitrum、Optimism 等部分网络。\n\n### 4. Limit Orders（限价单）\n\n**功能：** 设置目标价格，当市场价格达到时自动执行交易。\n\n**步骤：**\n1. 点击交易界面的 \"Limit\" 选项卡\n2. 选择交易对（如 ETH/USDC）\n3. 设置目标价格（如 1 ETH = 2,000 USDC）\n4. 设置订单有效期（1小时、1天、1周、自定义）\n5. 签名订单（链下订单，无 Gas 费）\n6. 当价格达到目标时，解决器自动执行\n\n**示例：**\n- 当前 ETH 价格：$1,800\n- 设置限价卖单：1 ETH = $2,000\n- 当 ETH 涨到 $2,000 时，订单自动成交\n\n**优势：**\n- 无需实时监控市场\n- 签名订单无 Gas 费\n- 可随时取消未成交订单\n\n### 5. 流动性挖矿（Liquidity Farming）\n\n**步骤：**\n1. 访问 [1inch.io/liquidity-protocols](https://app.1inch.io/#/1/dao/farming)\n2. 选择流动性池（如 1INCH/ETH）\n3. 点击 \"Add Liquidity\"\n4. 按比例提供两种代币（如 100 1INCH + 0.5 ETH）\n5. 确认交易，获得 LP Token\n6. 质押 LP Token 到农场赚取 1INCH 奖励\n\n**收益构成：**\n- 交易手续费分成（0.3%）\n- 1INCH 代币奖励（年化 10-50%，浮动）\n\n**风险：**\n- 无常损失（Impermanent Loss）：当代币价格比例变化时，相比单纯持有会有损失\n- 1INCH 价格波动风险\n\n## 高级功能\n\n### 1. Chi Gas Token（已废弃，仅历史参考）\n\n早期 1inch 推出的 Gas 代币，允许用户在 Gas 低价时预先购买，在 Gas 高价时使用以节省费用。现已停止支持。\n\n### 2. Pathfinder 算法\n\n**核心技术：** 1inch 的智能路由算法，能够：\n- 在 200+ DEX 中寻找最优价格\n- 自动拆分订单到多个 DEX（如 50% Uniswap + 30% SushiSwap + 20% Curve）\n- 考虑 Gas 成本，优化总交易成本\n\n**示例：**\n交易 10 ETH → USDC\n- **简单路由**：100% Uniswap，价格 $1,800/ETH，总计 $18,000\n- **1inch Pathfinder**：\n  - 40% Uniswap ($1,802/ETH) = $7,208\n  - 35% Curve ($1,805/ETH) = $6,317.5\n  - 25% Balancer ($1,800/ETH) = $4,500\n  - **总计：** $18,025.5\n  - **节省：** $25.5 + 更低滑点\n\n### 3. MEV 保护\n\n1inch 通过以下机制防止 MEV（最大可提取价值）攻击：\n- **私有内存池**：Fusion Mode 交易不进入公开内存池，避免被抢跑\n- **解决器竞价**：多个解决器竞争执行订单,确保最优价格\n- **RPC 保护**：与 Flashbots、Eden Network 等合作，减少三明治攻击\n\n### 4. API 集成（开发者）\n\n**获取最优报价：**\n```bash\ncurl \"https://api.1inch.dev/swap/v6.0/1/quote?src=0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE&dst=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&amount=1000000000000000000\"\n```\n\n**执行交易：**\n```javascript\nconst response = await fetch(\n  `https://api.1inch.dev/swap/v6.0/1/swap?src=${fromToken}&dst=${toToken}&amount=${amount}&from=${walletAddress}&slippage=1`,\n  { headers: { 'Authorization': 'Bearer YOUR_API_KEY' } }\n);\nconst swapData = await response.json();\nawait web3.eth.sendTransaction(swapData.tx);\n```\n\n**API 限制：**\n- 免费版：10 请求/秒\n- Pro 版：50 请求/秒，$50/月\n- Enterprise：自定义限制，联系商务\n\n## 费用对比\n\n| 功能 | 1inch 费用 | 直接使用 DEX | 节省 |\n|-----|----------|------------|------|\n| 标准交易 | 仅 Gas 费 | Gas + 可能的价差 | 0.1-3% |\n| Fusion Mode | $0 Gas | 正常 Gas | $5-50 |\n| Limit Order | $0（签名） | 不支持 | - |\n| 大额交易（$100k+） | Gas + 极低滑点 | Gas + 高滑点 | $500-5000 |\n\n## 安全最佳实践\n\n### 1. 滑点设置\n- **稳定币互换**：0.1-0.5%\n- **主流币种**：0.5-1%\n- **小币种/低流动性**：2-5%\n- **极端市场**：可临时调高到 5-10%\n\n⚠️ 滑点过高可能被 MEV 机器人利用，谨慎设置。\n\n### 2. 授权管理\n- 1inch 交易需先授权代币（Approve）\n- **安全做法**：仅授权本次交易所需金额\n- **便捷做法**：授权无限额度（Unlimited），但需信任 1inch 合约安全性\n- **撤销授权**：使用 [Revoke.cash](https://revoke.cash) 定期检查和撤销旧授权\n\n### 3. 钓鱼防范\n- 仅访问官方域名：`1inch.io`（注意拼写）\n- 不要点击社交媒体/邮件中的链接\n- 检查浏览器地址栏是否有安全锁图标（HTTPS）\n\n### 4. 交易确认\n- 检查代币合约地址是否正确（警惕假币）\n- 确认交易金额和路由路径\n- 大额交易前先小额测试\n\n## 常见问题\n\n### Q1: 为什么 1inch 的价格比 Uniswap 更好？\n**A:** 1inch 聚合了 200+ DEX，通过算法找到最优路径，并可能拆分订单到多个 DEX 以降低滑点。\n\n### Q2: Fusion Mode 会失败吗？\n**A:** 可能。如果市场价格快速变化导致无利可图，解决器可能不执行订单。建议设置合理的最低价格和有效期。\n\n### Q3: Gas 费用为什么有时比直接用 Uniswap 高?\n**A:** 复杂路由（多跳交易）会消耗更多 Gas。1inch 算法会在价格优势和 Gas 成本间权衡，如果价格节省 > Gas 增加，则值得。\n\n### Q4: 1INCH 代币有什么用？\n**A:** \n- 参与 DAO 治理投票\n- 质押赚取协议收入分成\n- 流动性挖矿奖励\n\n### Q5: 支持哪些链？\n**A:** 以太坊、BSC、Polygon、Arbitrum、Optimism、Avalanche、Gnosis、Fantom、Klaytn、Aurora 等 10+ 条链。\n\n### Q6: 如何取消 Limit Order？\n**A:** 在 \"Limit\" 界面点击订单旁的 \"Cancel\" 按钮，签名取消交易（无 Gas 费）。\n\n## 进阶策略\n\n### 策略 1: 跨 DEX 套利\n1. 使用 1inch API 实时监控不同 DEX 价格差\n2. 当价差 > Gas 成本 + 0.5% 时触发套利\n3. 使用闪电贷放大资金规模\n4. 通过 1inch 执行买入+卖出，赚取价差\n\n**示例：**\n- Uniswap ETH 价格：$1,800\n- SushiSwap ETH 价格：$1,820\n- 闪电贷 100 ETH，在 Uniswap 买入，在 SushiSwap 卖出\n- 利润：(1,820 - 1,800) × 100 - Gas 费 = ~$2,000\n\n### 策略 2: Fusion Mode 大额交易\n大额交易（$50k+）使用 Fusion Mode 可节省数百美元 Gas 费，且获得更好的价格（解决器竞价）。\n\n### 策略 3: Limit Order 网格交易\n设置多个限价买单和卖单，在价格区间内自动高抛低吸。\n\n**示例：**\n- ETH 价格 $1,800\n- 设置买单：$1,700, $1,600, $1,500\n- 设置卖单：$1,900, $2,000, $2,100\n- 价格波动时自动成交，赚取差价\n\n## 风险提示\n\n⚠️ **智能合约风险**：尽管经过多次审计，仍存在潜在漏洞  \n⚠️ **滑点风险**：市场剧烈波动时，实际成交价可能偏离预期  \n⚠️ **Fusion Mode 延迟**：链下订单可能需要 1-2 分钟执行  \n⚠️ **Limit Order 不保证成交**：价格短暂触及目标但流动性不足时可能失败  \n⚠️ **授权风险**：无限授权存在被恶意合约盗取风险（需信任 1inch 安全性）  \n\n## 相关资源\n\n- [1inch 官方文档](https://docs.1inch.io)\n- [API 文档](https://docs.1inch.io/docs/aggregation-protocol/introduction)\n- [审计报告](https://docs.1inch.io/docs/aggregation-protocol/smart-contract/security-audit)\n- [Discord 社区](https://discord.gg/1inch)\n- [治理论坛](https://gov.1inch.io)\n\n---\n\n**最后更新:** 2024年1月",
+    "status": "published",
+    "view_count": 0,
+    "favorite_count": 0
+  },
+  {
+    "name": "zkSync Era",
+    "slug": "zksync-era",
+    "category": "Layer 2",
+    "description": "zkSync Era 是基于 ZK-Rollup 技术的以太坊 Layer 2 扩容方案，提供低成本、高速度的交易体验，同时继承以太坊主网的安全性。支持 EVM 兼容，开发者可无缝迁移。",
+    "logo_url": "https://cryptologos.cc/logos/zksync-zk-logo.png",
+    "website": "https://zksync.io",
+    "twitter": "https://twitter.com/zksync",
+    "discord": "https://discord.gg/zksync",
+    "documentation": "https://docs.zksync.io",
+    "rating": 4.5,
+    "tvl": "650000000",
+    "supported_chains": ["zkSync Era"],
+    "fees": "交易费用约 $0.01-0.10（比以太坊主网低 95%+），取决于网络拥堵程度",
+    "security_audits": ["ABDK", "OpenZeppelin", "Trail of Bits", "Solidified"],
+    "launch_date": "2023-03-24",
+    "token_symbol": "ZK",
+    "governance": "ZK 代币持有者可参与协议治理和生态系统发展决策",
+    "insurance": "通过多重审计和 Bug Bounty 计划（最高奖励 $1,000,000）保障安全",
+    "pros": [
+      "基于 ZK-Rollup，交易最终性高（无需 7 天挑战期）",
+      "Gas 费用极低，约 $0.05-0.10（比以太坊主网低 95%+）",
+      "支持 EVM 兼容，现有 Solidity 合约可直接部署",
+      "原生 Account Abstraction 支持，提升用户体验",
+      "活跃的生态系统，DeFi、NFT、GameFi 项目丰富",
+      "官方跨链桥安全可靠，支持快速充提"
+    ],
+    "cons": [
+      "主网上线时间较短（2023年3月），相比 Arbitrum/Optimism 更新",
+      "部分 EVM 功能尚未完全兼容（如某些预编译合约）",
+      "生态规模小于 Arbitrum 和 Optimism",
+      "ZK 证明生成较复杂，对节点硬件要求高",
+      "跨链桥充值时间稍长（约 15-30 分钟）"
+    ],
+    "use_cases": [
+      "低成本 DeFi 交易（Swap、流动性挖矿）",
+      "NFT 铸造和交易（Gas 费极低）",
+      "参与 zkSync 原生项目空投交互",
+      "高频交易和游戏内交易（TPS 高达 2000+）",
+      "开发者部署 EVM 兼容的 DApp"
+    ],
+    "competitors": ["Arbitrum", "Optimism", "StarkNet", "Polygon zkEVM", "Scroll"],
+    "integration_guide": "# zkSync Era 使用指南\n\n## 快速开始\n\n### 1. 添加 zkSync Era 网络到钱包\n\n**MetaMask 配置：**\n\n| 参数 | 值 |\n|-----|----|\n| 网络名称 | zkSync Era Mainnet |\n| RPC URL | https://mainnet.era.zksync.io |\n| 链 ID | 324 |\n| 货币符号 | ETH |\n| 区块浏览器 | https://explorer.zksync.io |\n\n**快捷方式：** 访问 [chainlist.org](https://chainlist.org/?search=zksync)，搜索 \"zkSync Era\"，点击 \"Add to MetaMask\"。\n\n### 2. 跨链桥充值（从以太坊主网转入）\n\n**官方桥：**\n\n1. 访问 [portal.zksync.io](https://portal.zksync.io/bridge)\n2. 连接 MetaMask 钱包\n3. 选择 \"Deposit\" 模式\n4. 输入要转入的 ETH 或代币金额\n5. 点击 \"Deposit\"，确认交易\n6. 等待 15-30 分钟（以太坊主网确认 + zkSync 处理）\n7. 资金到账后可在 zkSync Era 上使用\n\n**费用：**\n- 以太坊主网 Gas 费：$5-20（取决于网络拥堵）\n- zkSync 桥接费：约 $0.50\n\n**第三方桥（更快但需信任第三方）：**\n- [Orbiter Finance](https://orbiter.finance)：2-5 分钟到账，手续费 0.1-0.3%\n- [Layerswap](https://layerswap.io)：支持从 CEX 直接转入，无需先转以太坊主网\n- [Rhino.fi](https://rhino.fi)：聚合多个跨链桥，自动寻找最优路径\n\n### 3. 在 zkSync Era 上进行 DeFi 交易\n\n**主流 DEX：**\n\n#### SyncSwap（原生 DEX）\n- 网址：[syncswap.xyz](https://syncswap.xyz)\n- 特点：zkSync Era 上 TVL 最高的 DEX，支持稳定币池和常规池\n- 使用：选择交易对（如 ETH/USDC），输入金额，点击 Swap\n- Gas 费：约 $0.05-0.10\n\n#### Mute.io（AMM + Limit Orders）\n- 网址：[mute.io](https://mute.io)\n- 特点：支持限价单功能，类似 1inch Limit Orders\n- 适合：想在特定价格成交的用户\n\n#### SpaceFi（跨链 DEX）\n- 网址：[spacefi.io](https://spacefi.io)\n- 特点：支持跨链交易（zkSync ↔ Evmos）\n\n**借贷协议：**\n\n#### Nexon Finance\n- 网址：[nexon.finance](https://nexon.finance)\n- 功能：存款赚息、抵押借贷（类似 Aave）\n- 支持资产：ETH、USDC、USDT\n\n#### zkLend（开发中）\n- zkSync 原生借贷协议，预计 2024 年上线\n\n### 4. 参与 zkSync 生态空投\n\n**策略：** zkSync Era 官方尚未发布代币，活跃用户有机会获得空投。\n\n**交互建议：**\n1. 跨链桥充值（使用官方桥）\n2. 在 SyncSwap 进行至少 5 笔交易\n3. 提供流动性到主流池（如 ETH/USDC）\n4. 使用 zkSync 原生 NFT 市场（Mint Square）\n5. 部署简单合约（如使用 [zkSync Remix](https://remix.zksync.io)）\n6. 保持钱包活跃度（每周至少 1 笔交易）\n\n**参考案例：** Arbitrum 空投要求：跨链桥使用 + 至少 3 笔交易。zkSync 可能会参考类似规则。\n\n### 5. NFT 铸造和交易\n\n**主流 NFT 市场：**\n\n#### Mint Square\n- 网址：[mintsquare.io](https://mintsquare.io)\n- 特点：zkSync Era 上最大的 NFT 市场\n- 铸造费用：约 $0.10-0.50（远低于以太坊主网的 $50-200）\n\n#### Tevaera\n- 网址：[tevaera.com](https://tevaera.com)\n- 特点：GameFi + NFT，支持链上游戏资产交易\n\n## 高级功能\n\n### 1. Account Abstraction（原生账户抽象）\n\nzkSync Era 原生支持 EIP-4337，可实现：\n\n**社交恢复：** 通过邮箱或手机号恢复钱包，无需助记词  \n**Gas 代付：** DApp 可为用户支付 Gas 费  \n**批量交易：** 一次签名执行多笔交易  \n**自定义签名：** 支持多签、时间锁等复杂逻辑  \n\n**使用示例（Argent zkSync 钱包）：**\n1. 下载 [Argent](https://argent.xyz/zksync) 钱包\n2. 使用邮箱注册（无需助记词）\n3. 享受原生 Account Abstraction 功能\n\n### 2. Paymaster（Gas 代付）\n\n某些 DApp 支持用 ERC-20 代币支付 Gas（无需 ETH）：\n\n**示例：** 在 SyncSwap 交易时，可选择用 USDC 支付 Gas，而不是 ETH。\n\n### 3. 开发者部署合约\n\n**使用 Hardhat：**\n\n```bash\nnpm install -D @matterlabs/hardhat-zksync-solc @matterlabs/hardhat-zksync-deploy\n```\n\n**hardhat.config.ts 配置：**\n```typescript\nimport \"@matterlabs/hardhat-zksync-solc\";\nimport \"@matterlabs/hardhat-zksync-deploy\";\n\nmodule.exports = {\n  zksolc: {\n    version: \"1.3.22\",\n    compilerSource: \"binary\",\n  },\n  networks: {\n    zkSyncMainnet: {\n      url: \"https://mainnet.era.zksync.io\",\n      ethNetwork: \"mainnet\",\n      zksync: true,\n    },\n  },\n};\n```\n\n**部署合约：**\n```bash\nnpx hardhat deploy-zksync --script deploy/MyContract.ts --network zkSyncMainnet\n```\n\n**注意：** zkSync Era 使用自定义编译器 `zksolc`，而非标准 `solc`。\n\n## 费用对比\n\n| 操作 | 以太坊主网 | zkSync Era | 节省 |\n|-----|----------|-----------|------|\n| 简单转账 | $5-15 | $0.05-0.10 | 98% |\n| Uniswap Swap | $20-50 | $0.10-0.30 | 99% |\n| NFT 铸造 | $50-200 | $0.20-1.00 | 99.5% |\n| 复杂合约调用 | $100-300 | $0.50-2.00 | 99% |\n\n## 安全最佳实践\n\n### 1. 使用官方跨链桥\n- ✅ [portal.zksync.io](https://portal.zksync.io/bridge)\n- ❌ 警惕假冒桥（钓鱼网站）\n\n### 2. 验证合约地址\n在 [zkSync Era Explorer](https://explorer.zksync.io) 中查看合约是否已验证（Verified Contract）。\n\n### 3. 限制授权额度\n使用 [Revoke.cash](https://revoke.cash) 定期检查和撤销旧授权。\n\n### 4. 测试网练习\n在 [zkSync Era Testnet](https://goerli.explorer.zksync.io) 上先练习，熟悉后再转入主网资金。\n\n## 常见问题\n\n### Q1: zkSync Era 和 zkSync Lite 有什么区别？\n**A:** \n- **zkSync Lite**：仅支持简单转账和交换，不支持智能合约\n- **zkSync Era**：完整 EVM 兼容，支持任意智能合约部署\n\n### Q2: 为什么我的合约在以太坊能跑，在 zkSync Era 报错？\n**A:** zkSync Era 使用 zkEVM，某些 EVM 特性可能不兼容：\n- `CREATE2` 地址计算方式不同\n- 部分预编译合约不支持（如 `sha256`）\n- Gas 计算逻辑差异\n\n详见 [zkSync 兼容性文档](https://docs.zksync.io/build/developer-reference/ethereum-differences.html)\n\n### Q3: 提现到以太坊主网需要多久？\n**A:** \n- 官方桥：3-24 小时（取决于 zkSync 批次提交频率）\n- 第三方快速桥（Orbiter Finance）：5-10 分钟\n\n### Q4: zkSync Era 会发币吗？\n**A:** 官方未明确表态，但生态活跃用户普遍预期会有空投。\n\n### Q5: 如何查看交易状态？\n**A:** 在 [zkSync Era Explorer](https://explorer.zksync.io) 输入交易哈希查询。\n\n### Q6: 支持哪些钱包？\n**A:** MetaMask、Argent、WalletConnect、Coinbase Wallet、Trust Wallet 等主流钱包均支持。\n\n## 进阶策略\n\n### 策略 1: 低成本 DCA（定投）\nzkSync Era 的低 Gas 费使得小额定投成为可能：\n- 每天投入 $10 购买 ETH\n- Gas 费仅 $0.05，占比 0.5%（以太坊主网占比可达 10%+）\n\n### 策略 2: NFT 批量铸造\n艺术家可在 zkSync Era 上批量铸造 NFT：\n- 以太坊主网：铸造 100 个 NFT 需 $5,000-10,000 Gas\n- zkSync Era：仅需 $50-100 Gas\n\n### 策略 3: 高频交易套利\n由于 Gas 费极低，可进行高频小额套利：\n- 监控 SyncSwap 和 Mute.io 价格差\n- 当价差 > $0.50 时触发套利\n- 单笔利润 $1-5，扣除 Gas 后净赚 $0.50-4.50\n\n## 风险提示\n\n⚠️ **Layer 2 风险**：依赖以太坊主网安全性，但 L2 自身可能存在技术漏洞  \n⚠️ **智能合约风险**：zkSync Era 生态项目尚未经历长时间考验  \n⚠️ **跨链桥风险**：跨链桥是黑客主要攻击目标，建议分散资金  \n⚠️ **提现延迟**：官方桥提现需 3-24 小时，紧急情况可能无法及时取出  \n⚠️ **EVM 兼容性**：部分合约可能因 zkEVM 差异而无法正常运行  \n\n## 相关资源\n\n- [zkSync 官方文档](https://docs.zksync.io)\n- [生态项目列表](https://zksync.dappradar.com)\n- [开发者教程](https://docs.zksync.io/build)\n- [Discord 社区](https://discord.gg/zksync)\n- [Bug Bounty 计划](https://hackenproof.com/zksync)\n\n---\n\n**最后更新:** 2024年1月",
+    "status": "published",
+    "view_count": 0,
+    "favorite_count": 0
+  }
+]

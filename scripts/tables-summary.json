@@ -1,0 +1,145 @@
+{
+  "总览": {
+    "总表数": 44,
+    "总大小": "约 3.2 MB",
+    "建议保留": 20,
+    "建议删除": 24,
+    "数据迁移": 3
+  },
+  "分类统计": {
+    "✅ 完全保留": 10,
+    "🔄 需要改造": 8,
+    "🗑️ 可以删除": 16,
+    "⚠️ 需要评估": 10
+  },
+  "核心发现": {
+    "好消息": [
+      "strategies 表（36列，384KB）可以直接作为玩法库使用",
+      "service_providers 表（34列，224KB）完美匹配需求，且已有17条数据",
+      "已有完整的用户系统（users + user_profiles）",
+      "已有标签、链、协议等基础数据表"
+    ],
+    "需要调整": [
+      "collected_content 重命名为 news（资讯雷达）",
+      "删除大量日志表（约 500KB）",
+      "简化分类系统（两个配置表合并为一个）",
+      "用 n8n 替代现有采集器配置"
+    ]
+  },
+  "完全保留的表": [
+    {
+      "name": "users",
+      "columns": 15,
+      "size": "160 KB",
+      "reason": "核心用户系统"
+    },
+    {
+      "name": "user_profiles",
+      "columns": 20,
+      "size": "88 KB",
+      "reason": "用户详细资料"
+    },
+    {
+      "name": "user_bookmarks",
+      "columns": 8,
+      "size": "112 KB",
+      "reason": "收藏功能"
+    },
+    {
+      "name": "user_alerts",
+      "columns": 20,
+      "size": "112 KB",
+      "reason": "提醒功能"
+    },
+    {
+      "name": "service_providers",
+      "columns": 34,
+      "size": "224 KB",
+      "reason": "服务商（完美匹配）"
+    },
+    {
+      "name": "tags",
+      "columns": 10,
+      "size": "48 KB",
+      "reason": "标签系统"
+    },
+    {
+      "name": "strategies",
+      "columns": 36,
+      "size": "384 KB",
+      "reason": "玩法库主表"
+    },
+    {
+      "name": "strategy_details",
+      "columns": 15,
+      "size": "184 KB",
+      "reason": "玩法详情"
+    },
+    {
+      "name": "strategy_ratings",
+      "columns": 13,
+      "size": "48 KB",
+      "reason": "评分系统"
+    },
+    {
+      "name": "chains",
+      "columns": 13,
+      "size": "112 KB",
+      "reason": "区块链信息"
+    }
+  ],
+  "需要改造的表": [
+    {
+      "name": "collected_content",
+      "action": "重命名为 news",
+      "reason": "作为资讯雷达主表"
+    },
+    {
+      "name": "raw_collected_data",
+      "action": "保留",
+      "reason": "资讯原始数据缓冲区"
+    },
+    {
+      "name": "category_l1_config + category_l2_config",
+      "action": "合并为 categories",
+      "reason": "简化分类系统"
+    }
+  ],
+  "建议删除的表": [
+    "admin_logs",
+    "api_logs",
+    "audit_logs",
+    "error_logs",
+    "collector_run_logs",
+    "search_logs",
+    "news_source_logs",
+    "ai_enhancement_queue",
+    "ai_processing_queue",
+    "ai_usage_logs",
+    "ai_providers",
+    "news_classification_rules",
+    "credibility_list",
+    "content_source_reputation",
+    "review_queue",
+    "feature_flags",
+    "version_history"
+  ],
+  "需要新建的表": [
+    {
+      "name": "user_interactions",
+      "reason": "统一管理点赞、收藏、关注等交互"
+    },
+    {
+      "name": "comments",
+      "reason": "评论系统（如果不用 Giscus）"
+    },
+    {
+      "name": "plays",
+      "reason": "玩法库（strategies 的简化视图或别名）"
+    },
+    {
+      "name": "news",
+      "reason": "资讯雷达（collected_content 重命名）"
+    }
+  ]
+}

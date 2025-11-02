@@ -1,0 +1,144 @@
+services:
+  # ============================================================================
+  # Directus Backend
+  # ============================================================================
+  directus:
+    image: directus/directus:latest
+    ports:
+      - 8055:8055
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    extra_hosts:
+      - "db.cujpgrzjmmttysphjknu.supabase.co:host-gateway"
+    volumes:
+      - ./directus/uploads:/directus/uploads
+      - ./directus/extensions:/directus/extensions
+    environment:
+      # Security Keys (will be generated)
+      KEY: 'lrd+RVDVhDaVvi/iZCX8mA5qcgWomEIP6okFq6zndy0='
+      SECRET: 'T9ftVLXv6CMLqoUV9ZEMktNrzPoX+S795NMLyJm7Rg0='
+
+      # Database (Supabase PostgreSQL) - Using IPv4 Pooler
+      DB_CLIENT: 'pg'
+      DB_CONNECTION_STRING: 'postgresql://postgres.cujpgrzjmmttysphjknu:bi3d8FpBFTUWuwOb@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres'
+      # Disable SSL certificate validation for Supabase
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+
+      # Admin Account
+      ADMIN_EMAIL: 'the_uk1@outlook.com'
+      ADMIN_PASSWORD: 'Mygcdjmyxzg2026!'
+
+      # Directus Config
+      PUBLIC_URL: 'http://localhost:8055'
+      WEBSOCKETS_ENABLED: 'true'
+
+      # CORS (for Next.js frontend)
+      CORS_ENABLED: 'true'
+      CORS_ORIGIN: 'http://localhost:3000'
+
+      # Rate Limiting
+      RATE_LIMITER_ENABLED: 'true'
+      RATE_LIMITER_POINTS: '50'
+      RATE_LIMITER_DURATION: '1'
+
+      # File Storage
+      STORAGE_LOCATIONS: 'local'
+      STORAGE_LOCAL_ROOT: './uploads'
+
+      # Cache
+      CACHE_ENABLED: 'true'
+      CACHE_STORE: 'memory'
+
+      # Assets
+      ASSETS_CACHE_TTL: '30m'
+      ASSETS_TRANSFORM_MAX_CONCURRENT: '4'
+
+      # Logging
+      LOG_LEVEL: 'info'
+      LOG_STYLE: 'pretty'
+
+      # Telemetry
+      TELEMETRY: 'false'
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8055/server/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # Meilisearch (Search Engine)
+  # ============================================================================
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    ports:
+      - 7700:7700
+    volumes:
+      - ./meilisearch/data:/meili_data
+    environment:
+      MEILI_MASTER_KEY: '3JxRTswA7fhGinzFd9BL5DBXdUhOktwPqzapMDL5GDc='
+      MEILI_ENV: 'development'
+      MEILI_NO_ANALYTICS: 'true'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # n8n (Workflow Automation & Data Scraping)
+  # ============================================================================
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - 5678:5678
+    volumes:
+      - ./n8n/data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    environment:
+      # Basic Auth
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: 'admin'
+      N8N_BASIC_AUTH_PASSWORD: 'Mygcdjmyxzg2026!'
+
+      # n8n Configuration
+      N8N_HOST: 'localhost'
+      N8N_PORT: '5678'
+      N8N_PROTOCOL: 'http'
+      WEBHOOK_URL: 'http://localhost:5678/'
+
+      # Database - use SQLite for simplicity
+      DB_TYPE: 'sqlite'
+
+      # Timezone
+      GENERIC_TIMEZONE: 'Asia/Shanghai'
+      TZ: 'Asia/Shanghai'
+
+      # Execution
+      EXECUTIONS_PROCESS: 'main'
+      EXECUTIONS_DATA_SAVE_ON_ERROR: 'all'
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: 'all'
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: 'true'
+
+      # External Services Access
+      N8N_METRICS: 'false'
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - directus
+
+
+volumes:
+  directus_uploads:
+  directus_extensions:
+  meilisearch_data:
+  n8n_data:

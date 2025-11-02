@@ -1,0 +1,287 @@
+{
+  "name": "Strategy Discovery",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/repositories",
+        "qs": {
+          "q": "topic:defi topic:ethereum sort:stars",
+          "per_page": 10
+        },
+        "options": {
+          "timeout": 10000
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "CryptoPlayBot"
+            }
+          ]
+        }
+      },
+      "name": "Fetch GitHub DeFi Projects",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and filter strategy content\nconst items = $input.all();\nconst strategies = [];\n\nfor (const item of items) {\n  const repo = item.json;\n  \n  // Check if repo has strategy-related content\n  const description = (repo.description || '').toLowerCase();\n  const readme = (repo.readme || '').toLowerCase();\n  \n  const hasStrategyKeywords = (\n    description.includes('strategy') ||\n    description.includes('yield') ||\n    description.includes('farm') ||\n    description.includes('defi') ||\n    readme.includes('how to') ||\n    readme.includes('tutorial')\n  );\n  \n  if (hasStrategyKeywords && repo.stargazers_count > 50) {\n    strategies.push({\n      json: {\n        title: repo.name,\n        description: repo.description,\n        url: repo.html_url,\n        readme_url: `${repo.html_url}/blob/main/README.md`,\n        stars: repo.stargazers_count,\n        topics: repo.topics || [],\n        language: repo.language,\n        source: 'GitHub'\n      }\n    });\n  }\n}\n\nreturn strategies;"
+      },
+      "name": "Filter Strategy Content",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.stars }}",
+              "operation": "larger",
+              "value2": 100
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{ $json.description }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Quality Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.readme_url }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Fetch README",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3000/api/ai/extract-strategy",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 90000
+        },
+        "bodyParametersJson": "={\n  \"content\": \"{{ $json.data }}\",\n  \"title\": \"{{ $node['Filter Strategy Content'].json.title }}\",\n  \"url\": \"{{ $node['Filter Strategy Content'].json.url }}\"\n}"
+      },
+      "name": "AI Extract Strategy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.risk_level }}",
+              "operation": "smallerEqual",
+              "value2": 5
+            }
+          ],
+          "array": [
+            {
+              "value1": "={{ $json.steps }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "name": "Validate Strategy Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate slug from title\nfunction generateSlug(title) {\n  return title\n    .toLowerCase()\n    .replace(/[^a-z0-9\\u4e00-\\u9fa5]+/g, '-')\n    .replace(/^-|-$/g, '');\n}\n\nconst data = $input.all()[0].json;\nconst filterNode = $node['Filter Strategy Content'].json;\n\nreturn [{\n  json: {\n    title: data.title,\n    slug: generateSlug(data.title),\n    summary: data.summary,\n    content: `## 概述\\n\\n${data.summary}\\n\\n## 操作步骤\\n\\n${data.steps.map((step, i) => `${i + 1}. ${step}`).join('\\n')}\\n\\n## 风险提示\\n\\n${data.warnings?.join('\\n') || '请自行评估风险'}`,\n    risk_level: data.risk_level,\n    apy_min: data.apy_range?.min || 0,\n    apy_max: data.apy_range?.max || 0,\n    required_capital: data.required_capital,\n    difficulty: data.difficulty,\n    source_url: filterNode.url,\n    status: 'draft',\n    category: null, // Will be set manually\n    tags: data.tags || [],\n    protocols: data.protocols || [],\n    chains: data.chains || []\n  }\n}];"
+      },
+      "name": "Prepare Strategy Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://directus:8055/items/strategies",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "name": "Save Strategy to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1850, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Directus Admin Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log success\nconst saved = $input.all();\nconsole.log(`Successfully saved strategy:`, saved[0].json.data);\nreturn saved;"
+      },
+      "name": "Log Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2050, 200]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch GitHub DeFi Projects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GitHub DeFi Projects": {
+      "main": [
+        [
+          {
+            "node": "Filter Strategy Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Strategy Content": {
+      "main": [
+        [
+          {
+            "node": "Quality Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Filter": {
+      "main": [
+        [
+          {
+            "node": "Fetch README",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch README": {
+      "main": [
+        [
+          {
+            "node": "AI Extract Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Extract Strategy": {
+      "main": [
+        [
+          {
+            "node": "Validate Strategy Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Strategy Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare Strategy Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Strategy Data": {
+      "main": [
+        [
+          {
+            "node": "Save Strategy to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Strategy to Directus": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "2",
+  "meta": {
+    "instanceId": "n8n-local"
+  },
+  "tags": []
+}

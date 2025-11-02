@@ -1,0 +1,53 @@
+[
+  {
+    "title": "LayerZero 全链交互空投策略",
+    "slug": "layerzero-omnichain-airdrop",
+    "category": "airdrop-points",
+    "summary": "通过在多条链上使用 LayerZero 协议进行跨链交互，获取潜在的 LZ 代币空投资格。",
+    "step_by_step_guide": "# LayerZero 全链交互空投策略\n\n## 📋 项目简介\n\nLayerZero 是一个全链互操作性协议，允许不同区块链之间进行消息传递。该项目获得了 a16z、红杉等顶级机构投资，估值超过 30 亿美元，极有可能进行代币空投。\n\n## 🎯 策略目标\n\n通过多链交互增加空投份额，预期空投价值：$500 - $5,000\n\n## 📝 操作步骤\n\n### 步骤 1: 准备工作\n\n1. **准备钱包**\n   - 推荐使用 MetaMask 或 Rabby Wallet\n   - 准备至少 $100 等值资产用于交互\n\n2. **准备多链 Gas 费**\n   - Ethereum: ~$20\n   - Arbitrum: ~$5\n   - Optimism: ~$5\n   - Polygon: ~$2\n   - BNB Chain: ~$2\n   - Avalanche: ~$5\n\n### 步骤 2: 使用 Stargate Finance 跨链\n\nStargate 是 LayerZero 的官方桥接协议。\n\n1. 访问 [Stargate Finance](https://stargate.finance)\n2. 连接钱包\n3. 选择源链和目标链\n4. 输入跨链金额（建议 $50+）\n5. 确认交易\n\n**建议交互路径**:\n- Ethereum → Arbitrum\n- Arbitrum → Optimism\n- Optimism → Polygon\n- Polygon → BNB Chain\n- BNB Chain → Avalanche\n\n### 步骤 3: 使用其他 LayerZero 应用\n\n1. **Aptos Bridge** - Aptos 官方跨链桥\n   - 连接 EVM 链和 Aptos\n   - 至少交互 1 次\n\n2. **Testnet Bridge** - LayerZero 测试网桥\n   - 使用测试网进行交互\n   - 成本低，增加交互次数\n\n3. **HashFlow** - 跨链 DEX\n   - 进行至少 3 笔跨链交易\n\n### 步骤 4: 增加交互多样性\n\n1. **交互不同金额**\n   - $50, $100, $200 等不同金额\n   - 避免使用固定金额\n\n2. **交互不同时间**\n   - 分散在不同天进行\n   - 避免批量操作\n\n3. **使用不同代币**\n   - USDC, USDT, ETH 等\n\n## ⚠️ 风险提示\n\n1. **智能合约风险**\n   - LayerZero 已审计，但仍有风险\n   - 建议不要投入超过总资产的 5%\n\n2. **桥接风险**\n   - 跨链交易可能失败\n   - Gas 费可能较高\n\n3. **女巫攻击检测**\n   - 不要使用关联地址\n   - 避免从 CEX 直接提币到多个地址\n\n## 💰 成本预估\n\n- **Gas 费总计**: $40 - $80\n- **资金占用**: $100 - $500\n- **时间成本**: 2-3 小时\n\n## 📊 预期收益\n\n- **保守估计**: $500 (假设空投 500 LZ，价格 $1)\n- **乐观估计**: $5,000 (假设空投 1,000 LZ，价格 $5)\n- **ROI**: 500% - 5,000%\n\n## ✅ 检查清单\n\n- [ ] 完成至少 10 次 Stargate 跨链\n- [ ] 覆盖至少 5 条不同链\n- [ ] 使用至少 3 种不同代币\n- [ ] 交互至少 3 个不同的 LayerZero 应用\n- [ ] 时间跨度至少 2 周\n\n## 🔗 相关链接\n\n- [LayerZero 官网](https://layerzero.network)\n- [Stargate Finance](https://stargate.finance)\n- [LayerZero Scan](https://layerzeroscan.com) - 查看交互记录\n",
+    "risk_level": 2,
+    "apy_min": null,
+    "apy_max": null,
+    "initial_investment": "$100-$500",
+    "required_knowledge": "基础",
+    "time_commitment": "2-3 小时",
+    "tags": ["LayerZero", "跨链桥", "Stargate"],
+    "chains": ["Ethereum", "Arbitrum", "Optimism", "Polygon", "BNB Chain", "Avalanche"],
+    "protocols": ["LayerZero", "Stargate Finance"],
+    "status": "published"
+  },
+  {
+    "title": "Compound V3 稳定币存款策略",
+    "slug": "compound-v3-stablecoin-deposit",
+    "category": "stable-yield",
+    "summary": "在 Compound V3 上存入稳定币赚取稳定利息，适合保守型投资者。",
+    "step_by_step_guide": "# Compound V3 稳定币存款策略\n\n## 📋 项目简介\n\nCompound 是以太坊上最老牌的 DeFi 借贷协议之一，V3 版本专注于提高资本效率和安全性。该协议已运行多年，安全性经过验证。\n\n## 🎯 策略目标\n\n获取稳定的被动收益，年化收益率 4-8%，风险极低。\n\n## 📝 操作步骤\n\n### 步骤 1: 准备工作\n\n1. **准备钱包**\n   - MetaMask 或其他 Web3 钱包\n   - 确保钱包在 Ethereum 主网\n\n2. **准备资金**\n   - 稳定币：USDC（推荐）、USDT 或 DAI\n   - 建议起投金额：$1,000+\n   - 准备 Gas 费：$10-20 (用于存款和提款)\n\n### 步骤 2: 连接 Compound V3\n\n1. 访问 [Compound Finance](https://app.compound.finance)\n2. 点击右上角「Connect Wallet」\n3. 选择您的钱包并授权连接\n4. 确认您在 Ethereum 主网\n\n### 步骤 3: 选择市场\n\n1. 在首页查看不同的借贷市场\n2. 选择 **USDC** 市场（最推荐）\n   - 优点：流动性最好、利率稳定、风险最低\n3. 查看当前 Supply APY（存款年化收益率）\n\n### 步骤 4: 存入稳定币\n\n1. 点击「Supply」按钮\n2. 输入您想存入的 USDC 数量\n   - 建议保留一些 ETH 作为 Gas 费\n3. 首次使用需要先「Approve」授权\n   - 确认授权交易\n   - 等待交易确认（约 1-2 分钟）\n4. 授权完成后，点击「Supply」\n5. 确认存款交易\n6. 等待交易确认\n\n### 步骤 5: 监控收益\n\n1. 存款成功后，您会收到 **cUSDCv3** 代币\n   - 这是您的存款凭证\n   - 会自动赚取利息\n2. 在 Compound Dashboard 查看实时收益\n3. 利息每个区块（约 12 秒）自动复利\n\n### 步骤 6: 提取资金\n\n1. 随时可以提取，没有锁定期\n2. 点击「Withdraw」按钮\n3. 输入提取数量（或点击 MAX 全部提取）\n4. 确认交易\n5. 提取后，cUSDCv3 会被销毁，您收到本金 + 利息\n\n## 💡 进阶策略\n\n### 策略 1: 利率套利\n\n- 当 Compound USDC 利率 > Aave USDC 利率时，选择 Compound\n- 定期比较不同协议的利率\n- 考虑 Gas 费成本\n\n### 策略 2: 多协议分散\n\n- 将资金分散在 Compound、Aave、Spark 等协议\n- 降低单一协议风险\n- 例如：40% Compound + 40% Aave + 20% Spark\n\n### 策略 3: 赚取 COMP 奖励\n\n- 某些市场会额外分发 COMP 代币奖励\n- 查看「Rewards」部分\n- 定期 Claim 奖励并复投\n\n## ⚠️ 风险提示\n\n1. **智能合约风险** (极低)\n   - Compound 已运行多年，代码经过多次审计\n   - 但智能合约永远存在漏洞风险\n\n2. **稳定币脱钩风险** (低)\n   - USDC 可能短期脱钩（如 2023 年 SVB 事件）\n   - 建议分散使用 USDC、USDT、DAI\n\n3. **利率波动风险** (中)\n   - APY 会根据市场供需变化\n   - 牛市时利率可能下降\n\n4. **Gas 费风险** (中)\n   - Ethereum Gas 费可能很高\n   - 小额资金（<$1,000）不划算\n\n## 💰 成本与收益\n\n### 成本预估\n\n- **Gas 费（存款）**: $5-15\n- **Gas 费（提款）**: $5-15\n- **总 Gas 费**: $10-30\n\n### 收益预估（基于 $10,000 投资）\n\n| 时间 | APY 4% | APY 6% | APY 8% |\n|-----|--------|--------|--------|\n| 1个月 | $33 | $50 | $67 |\n| 3个月 | $100 | $150 | $200 |\n| 6个月 | $200 | $300 | $400 |\n| 1年 | $400 | $600 | $800 |\n\n### 真实收益（扣除 Gas 费）\n\n- **1个月**: $20-55 (ROI: 0.2-0.55%)\n- **6个月**: $170-370 (ROI: 1.7-3.7%)\n- **1年**: $370-770 (ROI: 3.7-7.7%)\n\n## 📊 与其他策略对比\n\n| 策略 | APY | 风险 | 流动性 |\n|-----|-----|------|--------|\n| Compound USDC | 4-8% | 极低 | 极高 |\n| Aave USDC | 3-7% | 极低 | 极高 |\n| Curve 3pool | 5-10% | 低 | 高 |\n| CEX 理财 | 3-6% | 中 | 高 |\n| 美债 | 4-5% | 极低 | 中 |\n\n## ✅ 检查清单\n\n- [ ] 已准备好稳定币（USDC 推荐）\n- [ ] 已准备足够的 ETH 作为 Gas 费\n- [ ] 已连接 Compound V3\n- [ ] 已检查当前 APY\n- [ ] 已完成授权和存款\n- [ ] 已在日历上标记定期检查收益\n\n## 🔗 相关链接\n\n- [Compound Finance](https://app.compound.finance)\n- [Compound 文档](https://docs.compound.finance)\n- [DeFi Llama - Compound](https://defillama.com/protocol/compound-v3) - 查看 TVL 和利率\n- [Compound 风险分析](https://compound.finance/governance/security)\n",
+    "risk_level": 1,
+    "apy_min": 4,
+    "apy_max": 8,
+    "initial_investment": "$1000-$10000+",
+    "required_knowledge": "基础",
+    "time_commitment": "30 分钟",
+    "tags": ["Compound", "稳定币", "低风险"],
+    "chains": ["Ethereum"],
+    "protocols": ["Compound V3"],
+    "status": "published"
+  },
+  {
+    "title": "Uniswap V3 WETH-USDC 流动性策略",
+    "slug": "uniswap-v3-weth-usdc-liquidity",
+    "category": "market-making",
+    "summary": "在 Uniswap V3 上提供 WETH-USDC 流动性，通过集中流动性策略赚取交易手续费。",
+    "step_by_step_guide": "# Uniswap V3 WETH-USDC 流动性策略\n\n## 📋 项目简介\n\nUniswap V3 是最大的去中心化交易所，引入了集中流动性机制，允许 LP 在特定价格区间提供流动性，从而获得更高的资本效率和手续费收益。\n\n## 🎯 策略目标\n\n通过在 WETH-USDC 0.05% 手续费池中提供流动性，赚取交易手续费，年化收益率 10-25%。\n\n## 📝 操作步骤\n\n### 步骤 1: 准备工作\n\n1. **准备资金**\n   - 50% WETH + 50% USDC（价值对等）\n   - 建议起投：$2,000+（$1,000 WETH + $1,000 USDC）\n   - 准备 Gas 费：$20-50\n\n2. **理解集中流动性**\n   - V3 允许您选择价格区间\n   - 只有价格在区间内才赚取手续费\n   - 价格区间越窄，资本效率越高，但风险越大\n\n### 步骤 2: 连接 Uniswap V3\n\n1. 访问 [Uniswap V3](https://app.uniswap.org)\n2. 点击「Pool」标签\n3. 连接钱包\n4. 确认在 Ethereum 主网\n\n### 步骤 3: 创建新流动性头寸\n\n1. 点击「New Position」\n2. 选择代币对：**WETH** 和 **USDC**\n3. 选择手续费等级：**0.05%**（推荐）\n   - 0.05% 适合稳定交易对\n   - 0.3% 适合波动较大的交易对\n\n### 步骤 4: 设置价格区间\n\n**保守策略**（推荐新手）:\n- 当前 ETH 价格：假设 $2,000\n- 下限：$1,600 (-20%)\n- 上限：$2,400 (+20%)\n- 优点：价格不易出区间，持续赚取手续费\n- 缺点：资本效率较低\n\n**激进策略**（适合老手）:\n- 下限：$1,900 (-5%)\n- 上限：$2,100 (+5%)\n- 优点：资本效率高，手续费收益高\n- 缺点：价格容易出区间，需要频繁调整\n\n**推荐策略**（平衡型）:\n- 下限：$1,800 (-10%)\n- 上限：$2,200 (+10%)\n- 在界面上拖动滑块调整价格区间\n\n### 步骤 5: 存入流动性\n\n1. 输入其中一种代币的数量\n   - 例如：输入 0.5 WETH\n   - 系统会自动计算需要的 USDC 数量（约 $1,000）\n2. 预览手续费收益估算\n3. 点击「Approve WETH」和「Approve USDC」\n4. 确认授权交易\n5. 点击「Add」添加流动性\n6. 确认交易\n7. 您会收到一个 NFT 代表您的流动性头寸\n\n### 步骤 6: 监控和管理\n\n1. **查看收益**\n   - 在「Pool」页面查看您的头寸\n   - 实时显示未领取的手续费\n\n2. **领取手续费**\n   - 点击头寸\n   - 点击「Collect fees」\n   - 确认交易\n   - 手续费会发送到您的钱包\n\n3. **再平衡**\n   - 当价格接近区间边界时\n   - 考虑移除流动性并重新设置价格区间\n   - 或者添加新的头寸\n\n### 步骤 7: 移除流动性\n\n1. 点击您的头寸\n2. 点击「Remove Liquidity」\n3. 选择移除比例（25%, 50%, 75%, 100%）\n4. 确认交易\n5. 您会收到本金 + 未领取手续费\n\n## 💡 进阶技巧\n\n### 技巧 1: 多头寸策略\n\n创建多个不同价格区间的头寸：\n- 头寸 1: $1,600-$2,400 (40% 资金，保守)\n- 头寸 2: $1,800-$2,200 (40% 资金，平衡)\n- 头寸 3: $1,900-$2,100 (20% 资金，激进)\n\n### 技巧 2: 使用自动化工具\n\n- **Revert Finance** - 自动再平衡\n- **Gamma Strategies** - 主动管理\n- **Arrakis Finance** - 自动化 LP 管理\n\n### 技巧 3: 计算无常损失\n\n- 当 ETH 价格变化时，您的资产组成会改变\n- 使用工具：[DeFi Lab](https://defi-lab.xyz/uniswapv3simulator)\n- 价格波动越大，无常损失越大\n\n## ⚠️ 风险提示\n\n1. **无常损失** (高)\n   - ETH 价格大幅波动会导致损失\n   - 可能损失 5-20% 的本金\n   - 手续费收益可能无法弥补无常损失\n\n2. **价格出区间风险** (中)\n   - 价格超出设定区间，停止赚取手续费\n   - 需要重新调整头寸（消耗 Gas 费）\n\n3. **智能合约风险** (低)\n   - Uniswap V3 已审计，但仍有风险\n\n4. **Gas 费风险** (中)\n   - 频繁调整头寸会产生高额 Gas 费\n   - 小额资金不建议使用 V3\n\n## 💰 收益预估\n\n### 假设条件\n- 投资：$10,000 ($5,000 WETH + $5,000 USDC)\n- 日交易量：$50M\n- 手续费率：0.05%\n- TVL：$200M\n- 您的份额：0.005%\n\n### 收益计算\n\n**日手续费收益** = $50M × 0.05% × 0.005% = $12.5/天\n\n**年化收益率** = ($12.5 × 365) / $10,000 = 45.6%\n\n**真实预期**（考虑无常损失）:\n- 保守：10-15% APY\n- 正常：15-25% APY\n- 乐观：25-40% APY\n\n## 📊 数据监控工具\n\n- [Uniswap Info](https://info.uniswap.org) - 官方数据\n- [Revert Finance](https://revert.finance) - 头寸分析\n- [DeFi Llama](https://defillama.com/protocol/uniswap-v3) - TVL 数据\n- [APY Vision](https://apy.vision) - 收益率追踪\n\n## ✅ 检查清单\n\n- [ ] 已准备 50/50 的 WETH 和 USDC\n- [ ] 已理解无常损失的概念\n- [ ] 已设置合适的价格区间\n- [ ] 已添加流动性\n- [ ] 已设置日历定期检查头寸\n- [ ] 已准备足够 Gas 费用于调整\n\n## 🔗 相关链接\n\n- [Uniswap V3 App](https://app.uniswap.org)\n- [Uniswap V3 文档](https://docs.uniswap.org/protocol/concepts/V3-overview/concentrated-liquidity)\n- [无常损失计算器](https://dailydefi.org/tools/impermanent-loss-calculator/)\n",
+    "risk_level": 3,
+    "apy_min": 10,
+    "apy_max": 40,
+    "initial_investment": "$2000-$10000+",
+    "required_knowledge": "中级",
+    "time_commitment": "1-2 小时",
+    "tags": ["Uniswap V3", "流动性挖矿", "集中流动性"],
+    "chains": ["Ethereum", "Arbitrum", "Optimism", "Polygon"],
+    "protocols": ["Uniswap V3"],
+    "status": "published"
+  }
+]

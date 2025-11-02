@@ -1,0 +1,326 @@
+{
+  "name": "Crypto News Scraper v3 (Fixed RSS)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "id": "schedule-1"
+    },
+    {
+      "parameters": {
+        "url": "http://directus:8055/auth/login",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{\n  \"email\": \"the_uk1@outlook.com\",\n  \"password\": \"Mygcdjmyxzg2026!\"\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Login to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "id": "login-1"
+    },
+    {
+      "parameters": {
+        "url": "https://cointelegraph.com/rss",
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true,
+              "maxRedirects": 5
+            }
+          }
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; CryptoPlayBot/1.0)"
+            },
+            {
+              "name": "Accept",
+              "value": "application/rss+xml, application/xml, text/xml"
+            }
+          ]
+        }
+      },
+      "name": "Fetch Cointelegraph RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "id": "fetch-1"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse RSS XML and extract articles\nconst items = $input.all();\nconst cleanedData = [];\n\nfor (const item of items) {\n  const xmlData = item.json;\n  \n  // Simple RSS parsing - n8n should auto-parse XML\n  // If it's a string, we need to parse it\n  let parsedData;\n  if (typeof xmlData === 'string') {\n    // n8n usually handles this automatically\n    continue;\n  }\n  \n  // Extract RSS items\n  const rssItems = xmlData.rss?.channel?.item || xmlData.channel?.item || xmlData.item || [];\n  const itemsArray = Array.isArray(rssItems) ? rssItems : [rssItems];\n  \n  for (const rssItem of itemsArray) {\n    const entry = {\n      title: rssItem.title || '',\n      content: rssItem.description || rssItem['content:encoded'] || rssItem.content || '',\n      link: rssItem.link || '',\n      source: 'Cointelegraph',\n      published_at: rssItem.pubDate || rssItem.published || new Date().toISOString(),\n      category: rssItem.category || '',\n      raw_data: rssItem\n    };\n    \n    // Filter conditions\n    const wordCount = entry.content.split(' ').length;\n    const publishedDate = new Date(entry.published_at);\n    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);\n    const isRecent = publishedDate > oneDayAgo;\n    \n    if (wordCount > 30 && isRecent && entry.title) {\n      cleanedData.push({ json: entry });\n    }\n  }\n}\n\nconsole.log(`✅ Extracted ${cleanedData.length} articles from RSS feed`);\nreturn cleanedData;"
+      },
+      "name": "Parse RSS Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "id": "parse-1"
+    },
+    {
+      "parameters": {
+        "batchSize": 3,
+        "options": {}
+      },
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1050, 300],
+      "id": "split-1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.content }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.title }}",
+              "operation": "isNotEmpty"
+            }
+          ],
+          "number": [
+            {
+              "value1": "={{ $json.content.length }}",
+              "operation": "larger",
+              "value2": 50
+            }
+          ]
+        }
+      },
+      "name": "Quality Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "id": "quality-1"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3000/api/ai/translate-and-summarize",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 60000
+        },
+        "bodyParametersJson": "={\n  \"text\": {{ JSON.stringify($json.content) }},\n  \"title\": {{ JSON.stringify($json.title) }},\n  \"source_language\": \"en\",\n  \"target_language\": \"zh\"\n}"
+      },
+      "name": "AI Translate & Summarize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 200],
+      "id": "ai-translate-1"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3000/api/ai/categorize",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {
+          "timeout": 30000
+        },
+        "bodyParametersJson": "={\n  \"title\": {{ JSON.stringify($json.translated_title || $node[\"Parse RSS Data\"].json.title) }},\n  \"content\": {{ JSON.stringify($json.translated_text || $node[\"Parse RSS Data\"].json.content) }}\n}"
+      },
+      "name": "AI Categorize",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 200],
+      "id": "ai-categorize-1"
+    },
+    {
+      "parameters": {
+        "url": "http://directus:8055/items/news",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $node[\"Login to Directus\"].json[\"data\"][\"access_token\"] }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"title\": {{ JSON.stringify($node[\"AI Translate & Summarize\"].json.translated_title) }},\n  \"content\": {{ JSON.stringify($node[\"AI Translate & Summarize\"].json.translated_text) }},\n  \"summary\": {{ JSON.stringify($node[\"AI Translate & Summarize\"].json.summary) }},\n  \"source\": {{ JSON.stringify($node[\"Parse RSS Data\"].json.source) }},\n  \"source_url\": {{ JSON.stringify($node[\"Parse RSS Data\"].json.link) }},\n  \"category\": {{ JSON.stringify($json.category) }},\n  \"tags\": {{ JSON.stringify($node[\"AI Translate & Summarize\"].json.keywords || []) }},\n  \"status\": \"draft\",\n  \"is_important\": false,\n  \"published_at\": {{ JSON.stringify($node[\"Parse RSS Data\"].json.published_at) }}\n}",
+        "options": {}
+      },
+      "name": "Save to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1850, 200],
+      "id": "save-1"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log success\nconst saved = $input.all();\nconsole.log(`✅ Successfully saved ${saved.length} news items to Directus`);\nfor (const item of saved) {\n  if (item.json.data?.title) {\n    console.log(`   - ${item.json.data.title}`);\n  }\n}\nreturn saved;"
+      },
+      "name": "Log Success",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [2050, 200],
+      "id": "log-success-1"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log error\nconst errors = $input.all();\nconsole.error(`❌ Failed to process ${errors.length} items`);\nfor (const item of errors) {\n  console.error('Error:', item.json.message || item.json.error || 'Unknown error');\n}\nreturn errors;"
+      },
+      "name": "Log Error",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 400],
+      "id": "log-error-1"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Login to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Login to Directus": {
+      "main": [
+        [
+          {
+            "node": "Fetch Cointelegraph RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Cointelegraph RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse RSS Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse RSS Data": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "Quality Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Check": {
+      "main": [
+        [
+          {
+            "node": "AI Translate & Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Translate & Summarize": {
+      "main": [
+        [
+          {
+            "node": "AI Categorize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Categorize": {
+      "main": [
+        [
+          {
+            "node": "Save to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Directus": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "3",
+  "meta": {
+    "instanceId": "n8n-local"
+  },
+  "tags": []
+}

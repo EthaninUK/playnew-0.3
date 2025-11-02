@@ -1,0 +1,142 @@
+{
+  "name": "ChainCatcher News Scraper (HTTP API)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/scrape/chaincatcher",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "id": "http-trigger-scraper",
+      "name": "Trigger ChainCatcher Scraper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check If Successful",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format success message\nconst stats = $input.item.json.stats;\nconst timestamp = $input.item.json.timestamp;\n\nreturn [{\n  json: {\n    status: '✅ Success',\n    timestamp: timestamp,\n    message: `ChainCatcher scraping completed successfully`,\n    details: {\n      saved: stats.saved,\n      skipped: stats.skipped,\n      errors: stats.errors,\n      total: stats.saved + stats.skipped\n    },\n    summary: `Saved ${stats.saved} new items, skipped ${stats.skipped} duplicates, ${stats.errors} errors`\n  }\n}];"
+      },
+      "id": "format-success",
+      "name": "Format Success",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format error message\nconst errorMsg = $input.item.json.error || 'Unknown error';\nconst timestamp = $input.item.json.timestamp;\n\nreturn [{\n  json: {\n    status: '❌ Failed',\n    timestamp: timestamp,\n    error: errorMsg,\n    message: 'ChainCatcher scraping failed'\n  }\n}];"
+      },
+      "id": "format-error",
+      "name": "Format Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Trigger ChainCatcher Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger ChainCatcher Scraper": {
+      "main": [
+        [
+          {
+            "node": "Check If Successful",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Successful": {
+      "main": [
+        [
+          {
+            "node": "Format Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-10-27T00:00:00.000Z",
+      "updatedAt": "2025-10-27T00:00:00.000Z",
+      "id": "1",
+      "name": "scraper"
+    }
+  ]
+}

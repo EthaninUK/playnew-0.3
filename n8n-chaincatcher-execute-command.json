@@ -1,0 +1,136 @@
+{
+  "name": "ChainCatcher News Scraper (Execute Command)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=node {{ $env.HOME }}/PlayNew_0.3/scrape-chaincatcher-simple.js",
+        "options": {}
+      },
+      "id": "execute-scraper",
+      "name": "Run ChainCatcher Scraper",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.stdout }}",
+              "operation": "contains",
+              "value2": "✅ ChainCatcher scraping complete!"
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check If Successful",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse the output and create a summary\nconst output = $input.item.json.stdout || '';\n\n// Extract statistics\nconst savedMatch = output.match(/Saved: (\\d+)/);\nconst skippedMatch = output.match(/Skipped: (\\d+)/);\nconst errorsMatch = output.match(/Errors: (\\d+)/);\n\nconst saved = savedMatch ? parseInt(savedMatch[1]) : 0;\nconst skipped = skippedMatch ? parseInt(skippedMatch[1]) : 0;\nconst errors = errorsMatch ? parseInt(errorsMatch[1]) : 0;\n\nreturn [{\n  json: {\n    status: 'success',\n    timestamp: new Date().toISOString(),\n    saved: saved,\n    skipped: skipped,\n    errors: errors,\n    message: `Successfully scraped ChainCatcher: ${saved} new items, ${skipped} skipped, ${errors} errors`,\n    raw_output: output\n  }\n}];"
+      },
+      "id": "format-success",
+      "name": "Format Success Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse error output\nconst stderr = $input.item.json.stderr || '';\nconst stdout = $input.item.json.stdout || '';\n\nreturn [{\n  json: {\n    status: 'error',\n    timestamp: new Date().toISOString(),\n    error_message: stderr || 'Unknown error',\n    output: stdout,\n    message: '❌ ChainCatcher scraper failed'\n  }\n}];"
+      },
+      "id": "format-error",
+      "name": "Format Error Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Every 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Run ChainCatcher Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run ChainCatcher Scraper": {
+      "main": [
+        [
+          {
+            "node": "Check If Successful",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Successful": {
+      "main": [
+        [
+          {
+            "node": "Format Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-27T00:00:00.000Z",
+  "versionId": "1"
+}

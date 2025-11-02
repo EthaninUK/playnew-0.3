@@ -1,0 +1,187 @@
+# ============================================================================
+# PlayNew 0.3 - Production Docker Compose Configuration
+# ============================================================================
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # Directus Backend (CMS & API)
+  # ==========================================================================
+  directus:
+    image: directus/directus:latest
+    container_name: playnew-directus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8055:8055"  # Only expose to localhost (Nginx will proxy)
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    extra_hosts:
+      - "db.cujpgrzjmmttysphjknu.supabase.co:host-gateway"
+    volumes:
+      - ./directus/uploads:/directus/uploads
+      - ./directus/extensions:/directus/extensions
+    environment:
+      # Security Keys - LOAD FROM .env.production
+      KEY: ${DIRECTUS_KEY}
+      SECRET: ${DIRECTUS_SECRET}
+
+      # Database (Supabase PostgreSQL)
+      DB_CLIENT: 'pg'
+      DB_CONNECTION_STRING: 'postgresql://postgres.cujpgrzjmmttysphjknu:bi3d8FpBFTUWuwOb@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres'
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+
+      # Admin Account
+      ADMIN_EMAIL: 'the_uk1@outlook.com'
+      ADMIN_PASSWORD: 'Mygcdjmyxzg2026!'
+
+      # Directus Config - PRODUCTION URLs
+      PUBLIC_URL: 'https://api.playnew.ai'
+      WEBSOCKETS_ENABLED: 'true'
+
+      # CORS - Allow production domain
+      CORS_ENABLED: 'true'
+      CORS_ORIGIN: 'https://playnew.ai,https://www.playnew.ai'
+
+      # Rate Limiting - More strict in production
+      RATE_LIMITER_ENABLED: 'true'
+      RATE_LIMITER_POINTS: '30'
+      RATE_LIMITER_DURATION: '1'
+
+      # File Storage
+      STORAGE_LOCATIONS: 'local'
+      STORAGE_LOCAL_ROOT: './uploads'
+
+      # Cache - Use Redis in production for better performance
+      CACHE_ENABLED: 'true'
+      CACHE_STORE: 'memory'  # TODO: Upgrade to Redis later
+
+      # Assets
+      ASSETS_CACHE_TTL: '30m'
+      ASSETS_TRANSFORM_MAX_CONCURRENT: '2'  # Reduced for 2GB RAM
+
+      # Logging - Production settings
+      LOG_LEVEL: 'warn'  # Less verbose
+      LOG_STYLE: 'raw'   # Better for log aggregation
+
+      # Telemetry
+      TELEMETRY: 'false'
+
+      # Memory optimization for 2GB RAM server
+      NODE_OPTIONS: '--max-old-space-size=512'
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8055/server/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # Meilisearch (Search Engine)
+  # ==========================================================================
+  meilisearch:
+    image: getmeili/meilisearch:v1.11
+    container_name: playnew-meilisearch
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7700:7700"  # Only expose to localhost
+    volumes:
+      - ./meilisearch/data:/meili_data
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY}
+      MEILI_ENV: 'production'
+      MEILI_NO_ANALYTICS: 'true'
+      MEILI_HTTP_ADDR: '0.0.0.0:7700'
+      # Memory limit for 2GB RAM server
+      MEILI_MAX_INDEXING_MEMORY: '256mb'
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ==========================================================================
+  # n8n (Workflow Automation)
+  # ==========================================================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: playnew-n8n
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"  # Only expose to localhost
+    volumes:
+      - ./n8n/data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    environment:
+      # Basic Auth
+      N8N_BASIC_AUTH_ACTIVE: 'true'
+      N8N_BASIC_AUTH_USER: 'admin'
+      N8N_BASIC_AUTH_PASSWORD: 'Mygcdjmyxzg2026!'
+
+      # n8n Configuration - PRODUCTION
+      N8N_HOST: 'n8n.playnew.ai'
+      N8N_PORT: '5678'
+      N8N_PROTOCOL: 'https'
+      WEBHOOK_URL: 'https://n8n.playnew.ai/'
+
+      # Database
+      DB_TYPE: 'sqlite'
+
+      # Timezone
+      GENERIC_TIMEZONE: 'Asia/Shanghai'
+      TZ: 'Asia/Shanghai'
+
+      # Execution
+      EXECUTIONS_PROCESS: 'main'
+      EXECUTIONS_DATA_SAVE_ON_ERROR: 'all'
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: 'all'
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: 'true'
+
+      # Security
+      N8N_METRICS: 'false'
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - directus
+
+  # ==========================================================================
+  # Next.js Frontend (Built as static export or standalone)
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: playnew-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"  # Only expose to localhost
+    environment:
+      NODE_ENV: 'production'
+    env_file:
+      - ./frontend/.env.production
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - directus
+      - meilisearch
+
+volumes:
+  directus_uploads:
+  directus_extensions:
+  meilisearch_data:
+  n8n_data:

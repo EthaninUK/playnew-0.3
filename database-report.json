@@ -1,0 +1,179 @@
+{
+  "timestamp": "2025-10-20T11:57:13.284Z",
+  "totalTables": 9,
+  "tables": [
+    {
+      "name": "users",
+      "rowCount": 6,
+      "columns": [
+        "id",
+        "wallet_address",
+        "email",
+        "username",
+        "avatar_url",
+        "tier",
+        "tier_expires_at",
+        "alert_quota",
+        "bookmark_quota",
+        "preferences",
+        "last_login_at",
+        "created_at",
+        "updated_at",
+        "is_admin",
+        "role"
+      ]
+    },
+    {
+      "name": "user_profiles",
+      "rowCount": 1,
+      "columns": [
+        "id",
+        "username",
+        "display_name",
+        "bio",
+        "auth_method",
+        "wallet_address",
+        "tier",
+        "alert_quota",
+        "bookmark_quota",
+        "preferences",
+        "total_bookmarks",
+        "total_alerts",
+        "total_views",
+        "created_at",
+        "updated_at",
+        "email_notifications",
+        "price_alerts",
+        "new_strategies",
+        "weekly_digest",
+        "avatar_url"
+      ]
+    },
+    {
+      "name": "plays",
+      "rowCount": 42,
+      "columns": [
+        "id",
+        "title",
+        "slug",
+        "category",
+        "status",
+        "created_at",
+        "updated_at",
+        "view_count"
+      ]
+    },
+    {
+      "name": "news",
+      "rowCount": 30,
+      "columns": [
+        "id",
+        "url",
+        "title",
+        "content",
+        "author",
+        "content_published_at",
+        "source",
+        "source_type",
+        "source_metadata",
+        "cleaned_content",
+        "extracted_data",
+        "status",
+        "review_status",
+        "processing_pipeline",
+        "ai_classification",
+        "ai_tags",
+        "ai_summary",
+        "quality_score",
+        "is_duplicate",
+        "ai_enhanced_at",
+        "ai_provider",
+        "ai_tokens_used",
+        "reviewed_by",
+        "reviewed_at",
+        "review_notes",
+        "published_strategy_id",
+        "published_at",
+        "created_at",
+        "updated_at",
+        "category",
+        "ai_processed",
+        "priority"
+      ]
+    },
+    {
+      "name": "categories",
+      "rowCount": 11,
+      "columns": [
+        "id",
+        "name",
+        "slug",
+        "type",
+        "parent_id",
+        "description",
+        "icon",
+        "order_index",
+        "is_active",
+        "metadata",
+        "created_at",
+        "updated_at"
+      ]
+    },
+    {
+      "name": "tags",
+      "rowCount": 0,
+      "columns": []
+    },
+    {
+      "name": "service_providers",
+      "rowCount": 17,
+      "columns": [
+        "id",
+        "name",
+        "slug",
+        "logo_url",
+        "category",
+        "subcategory",
+        "description",
+        "tagline",
+        "company_info",
+        "sla_terms",
+        "pricing",
+        "case_studies",
+        "rating",
+        "review_count",
+        "contact_info",
+        "tags",
+        "verified",
+        "verified_at",
+        "verified_by",
+        "view_count",
+        "inquiry_count",
+        "created_at",
+        "updated_at",
+        "certifications",
+        "features",
+        "chains_supported",
+        "featured",
+        "status",
+        "author_id",
+        "type",
+        "website_url",
+        "pros",
+        "cons",
+        "is_featured",
+        "search_vector"
+      ]
+    },
+    {
+      "name": "user_interactions",
+      "rowCount": 0,
+      "columns": []
+    },
+    {
+      "name": "comments",
+      "rowCount": 0,
+      "columns": []
+    }
+  ]
+}
