@@ -12,6 +12,7 @@ jobs:
   deploy:
     name: Deploy to AWS
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Increase overall job timeout
 
     steps:
       - name: Checkout code
@@ -24,6 +25,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
+          command_timeout: 20m  # Increase SSH command timeout to 20 minutes
           script: |
             # Navigate to project directory
             cd /var/www/playnew
