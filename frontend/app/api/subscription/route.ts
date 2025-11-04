@@ -29,7 +29,7 @@ interface UserSubscription {
   stripe_subscription_id: string | null;
 }
 
-interface SubscriptionWithMembership extends UserSubscription {
+interface SubscriptionWithMembership extends Omit<UserSubscription, 'membership_id'> {
   membership_id: Membership;
 }
 

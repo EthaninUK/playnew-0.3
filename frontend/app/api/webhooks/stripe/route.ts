@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2025-09-30.clover',
 });
 
 const DIRECTUS_URL = process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
@@ -101,8 +101,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
   // 计算订阅期限
-  const startDate = new Date(subscription.current_period_start * 1000);
-  const endDate = new Date(subscription.current_period_end * 1000);
+  const startDate = new Date((subscription as any).current_period_start * 1000);
+  const endDate = new Date((subscription as any).current_period_end * 1000);
 
   // 创建 user_subscriptions 记录
   try {
@@ -195,8 +195,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           },
           body: JSON.stringify({
             status: subscription.status === 'active' ? 'active' : 'cancelled',
-            end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-            auto_renew: !subscription.cancel_at_period_end,
+            end_date: new Date((subscription as any).current_period_end * 1000).toISOString(),
+            auto_renew: !(subscription as any).cancel_at_period_end,
           }),
         }
       );
@@ -255,10 +255,10 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_succeeded:', invoice.id);
 
-  if (!invoice.subscription) return;
+  if (!(invoice as any).subscription) return;
 
-  const subscriptionId = invoice.subscription as string;
-  const amount = invoice.amount_paid / 100;
+  const subscriptionId = (invoice as any).subscription as string;
+  const amount = (invoice as any).amount_paid / 100;
 
   try {
     // 查找对应的订阅记录
@@ -288,7 +288,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
           subscription_id: subscriptionRecord.id,
           amount: amount,
           payment_method: 'stripe',
-          stripe_payment_id: invoice.payment_intent,
+          stripe_payment_id: (invoice as any).payment_intent,
           status: 'completed',
           payment_date: new Date().toISOString(),
         }),
@@ -305,9 +305,9 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log('Processing invoice.payment_failed:', invoice.id);
 
-  if (!invoice.subscription) return;
+  if (!(invoice as any).subscription) return;
 
-  const subscriptionId = invoice.subscription as string;
+  const subscriptionId = (invoice as any).subscription as string;
 
   try {
     // 查找对应的订阅记录

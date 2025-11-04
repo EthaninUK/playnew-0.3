@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -13,8 +14,11 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting ChainCatcher scraping via API...');
 
-    // Execute the scraper script
-    const scriptPath = '/Users/m1/PlayNew_0.3/scrape-chaincatcher-simple.js';
+    // Execute the scraper script - use relative path from project root
+    // In production, this will be in /var/www/playnew/scrape-chaincatcher-simple.js
+    // In development, this will be in the project root
+    const projectRoot = process.cwd();
+    const scriptPath = path.join(projectRoot, 'scrape-chaincatcher-simple.js');
 
     const { stdout, stderr } = await execAsync(`node ${scriptPath}`, {
       timeout: 60000 // 60 second timeout

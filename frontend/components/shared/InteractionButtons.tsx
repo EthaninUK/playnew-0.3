@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { useViewCount } from '@/hooks/useViewCount';
 
 interface InteractionButtonsProps {
-  contentType: 'strategy' | 'news';
+  contentType: 'strategy' | 'news' | 'provider';
   contentId: string;
   className?: string;
 }

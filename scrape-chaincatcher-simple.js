@@ -7,9 +7,10 @@
 const axios = require('axios');
 const vm = require('vm');
 
-const DIRECTUS_URL = 'http://localhost:8055';
-const DIRECTUS_EMAIL = 'the_uk1@outlook.com';
-const DIRECTUS_PASSWORD = 'Mygcdjmyxzg2026!';
+// Support both local and production environments
+const DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://localhost:8055';
+const DIRECTUS_EMAIL = process.env.DIRECTUS_EMAIL || 'the_uk1@outlook.com';
+const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || 'Mygcdjmyxzg2026!';
 
 async function getDirectusToken() {
   try {

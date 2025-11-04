@@ -28,14 +28,11 @@ jobs:
             # Navigate to project directory
             cd /var/www/playnew
 
-            # Pull latest code
-            git pull origin main
+            # Make deploy script executable
+            chmod +x deploy-pm2.sh
 
-            # Run deployment script
-            ./deploy.sh
-
-            # Show deployment status
-            docker-compose -f docker-compose.prod.yml ps
+            # Run PM2 deployment script
+            ./deploy-pm2.sh
 
       - name: Notify deployment status
         if: always()
