@@ -100,8 +100,10 @@ export interface News {
 // ServiceProvider interface removed - feature not implemented
 
 // Create Directus client
-export const directus = createDirectus(process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055')
-  .with(rest());
+// Use DIRECTUS_URL for server-side (faster, localhost), NEXT_PUBLIC_DIRECTUS_URL for client-side
+export const directus = createDirectus(
+  process.env.DIRECTUS_URL || process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055'
+).with(rest());
 
 // API functions
 export async function getStrategies(options?: {
