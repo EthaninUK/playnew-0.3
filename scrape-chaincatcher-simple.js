@@ -132,9 +132,9 @@ async function scrapeChainCatcher() {
 
     for (const item of items) {
       try {
-        // Check if item already exists by title (more reliable than slug)
+        // Check if item already exists by URL (unique constraint)
         const checkResponse = await axios.get(
-          `${DIRECTUS_URL}/items/news?filter[title][_eq]=${encodeURIComponent(item.title)}`,
+          `${DIRECTUS_URL}/items/news?filter[url][_eq]=${encodeURIComponent(item.url)}`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
