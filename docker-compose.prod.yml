@@ -25,6 +25,8 @@ services:
     volumes:
       - ./directus/uploads:/directus/uploads
       - ./directus/extensions:/directus/extensions
+    env_file:
+      - .env.production
     environment:
       # Security Keys - LOAD FROM .env.production
       KEY: ${DIRECTUS_KEY}
@@ -92,6 +94,8 @@ services:
       - "127.0.0.1:7700:7700"  # Only expose to localhost
     volumes:
       - ./meilisearch/data:/meili_data
+    env_file:
+      - .env.production
     environment:
       MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY}
       MEILI_ENV: 'production'
