@@ -14,11 +14,13 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting ChainCatcher scraping via API...');
 
-    // Execute the scraper script - use relative path from project root
-    // In production, this will be in /var/www/playnew/scrape-chaincatcher-simple.js
-    // In development, this will be in the project root
+    // Execute the scraper script
+    // In production with PM2, cwd is /var/www/playnew/frontend, so we need to go up one level
+    // In development, cwd is the project root
     const projectRoot = process.cwd();
-    const scriptPath = path.join(projectRoot, 'scrape-chaincatcher-simple.js');
+    const scriptPath = projectRoot.endsWith('frontend')
+      ? path.join(projectRoot, '..', 'scrape-chaincatcher-simple.js')
+      : path.join(projectRoot, 'scrape-chaincatcher-simple.js');
 
     const { stdout, stderr } = await execAsync(`node ${scriptPath}`, {
       timeout: 60000 // 60 second timeout
