@@ -7,9 +7,11 @@
 
 import { MeiliSearch } from 'meilisearch';
 
-const DIRECTUS_URL = process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
-const MEILISEARCH_HOST = process.env.NEXT_PUBLIC_MEILISEARCH_HOST || 'http://localhost:7700';
-const MEILISEARCH_KEY = process.env.MEILISEARCH_MASTER_KEY;
+// Use server-side URLs (localhost) for better performance on production server
+const DIRECTUS_URL = process.env.DIRECTUS_URL || process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
+const DIRECTUS_TOKEN = process.env.DIRECTUS_ADMIN_TOKEN;
+const MEILISEARCH_HOST = 'http://localhost:7700'; // Always use localhost for server-side sync
+const MEILISEARCH_KEY = process.env.MEILISEARCH_MASTER_KEY || process.env.MEILISEARCH_API_KEY;
 
 const client = new MeiliSearch({
   host: MEILISEARCH_HOST,
@@ -142,7 +144,12 @@ async function syncStrategies() {
       'fields': 'id,title,slug,summary,content,category,risk_level,view_count,bookmark_count,created_at,updated_at,status,tags,chains,protocols',
     });
 
-    const response = await fetch(`${DIRECTUS_URL}/items/strategies?${params}`);
+    const headers: HeadersInit = {};
+    if (DIRECTUS_TOKEN) {
+      headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
+    }
+
+    const response = await fetch(`${DIRECTUS_URL}/items/strategies?${params}`, { headers });
     const data = await response.json();
     const strategies = data.data;
     console.log(`Found ${strategies.length} strategies to sync`);
@@ -266,7 +273,12 @@ async function syncProviders() {
       'fields': 'id,name,slug,description,logo_url,type,category,rating,verified,view_count,review_count,website_url,status',
     });
 
-    const response = await fetch(`${DIRECTUS_URL}/items/service_providers?${params}`);
+    const headers: HeadersInit = {};
+    if (DIRECTUS_TOKEN) {
+      headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
+    }
+
+    const response = await fetch(`${DIRECTUS_URL}/items/service_providers?${params}`, { headers });
     const data = await response.json();
 
     if (data.errors) {
@@ -388,7 +400,12 @@ async function syncNews() {
       'fields': 'id,title,ai_summary,content,category,source,published_at,created_at,status,news_type',
     });
 
-    const response = await fetch(`${DIRECTUS_URL}/items/news?${params}`);
+    const headers: HeadersInit = {};
+    if (DIRECTUS_TOKEN) {
+      headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
+    }
+
+    const response = await fetch(`${DIRECTUS_URL}/items/news?${params}`, { headers });
     const data = await response.json();
 
     if (data.errors) {
