@@ -22,7 +22,13 @@ export async function POST(request: NextRequest) {
       ? path.join(projectRoot, '..', 'scrape-chaincatcher-simple.js')
       : path.join(projectRoot, 'scrape-chaincatcher-simple.js');
 
+    // Execute script from project root directory to access node_modules
+    const projectRootDir = projectRoot.endsWith('frontend')
+      ? path.join(projectRoot, '..')
+      : projectRoot;
+
     const { stdout, stderr } = await execAsync(`node ${scriptPath}`, {
+      cwd: projectRootDir, // Execute from project root
       timeout: 60000 // 60 second timeout
     });
 
