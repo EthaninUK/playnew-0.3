@@ -1,0 +1,34 @@
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6D28D9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 类似原图的流畅 ">" 形状，但融入 P 的元素 -->
+  <g transform="translate(50, 50)">
+    <!-- 上部分 -->
+    <path d="M 0 30 C 0 13.4 13.4 0 30 0 L 250 0 C 280 0 310 20 330 45 L 330 90 C 330 100 325 105 315 105 L 180 105 C 165 105 155 115 150 125 L 150 130"
+          fill="url(#purpleGradient)"
+          stroke="none"
+          stroke-width="0"/>
+
+    <!-- 中间 S 曲线 -->
+    <path d="M 150 130 C 150 135 155 140 165 140 L 260 140 C 275 140 285 150 295 165 L 340 235 C 348 248 348 262 340 275 L 295 345 C 285 360 275 370 260 370 L 165 370 C 155 370 150 375 150 380 L 150 385"
+          fill="url(#purpleGradient)"
+          stroke="none"
+          stroke-width="0"/>
+
+    <!-- 下部分 -->
+    <path d="M 150 385 C 150 390 155 395 165 395 L 315 395 C 325 395 330 400 330 410 L 330 455 C 310 480 280 500 250 500 L 30 500 C 13.4 500 0 486.6 0 470 L 0 415 C 0 405 5 400 15 400 L 100 400"
+          fill="url(#purpleGradient)"
+          stroke="none"
+          stroke-width="0"/>
+
+    <!-- 左下角装饰圆点 -->
+    <circle cx="30" cy="540" r="30" fill="url(#purpleGradient)"/>
+  </g>
+</svg>

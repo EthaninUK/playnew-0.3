@@ -1,272 +1,205 @@
-# 📋 PlayNew 0.3 部署清单
+# PlayNew 0.3 - 部署检查清单
 
-部署前请逐项检查,确保所有步骤都已完成。
-
----
-
-## 阶段 1: 本地准备 ✅
-
-### Git 仓库
-- [x] Git 已初始化
-- [x] 所有文件已提交
-- [ ] 在 GitHub 创建私有仓库 `playnew-0.3`
-- [ ] 添加远程仓库: `git remote add origin ...`
-- [ ] 推送代码: `git push -u origin main`
-
-### 配置文件检查
-- [x] `.gitignore` 已创建
-- [x] `.env.production.example` 已创建
-- [x] `frontend/.env.production.example` 已创建
-- [x] `docker-compose.prod.yml` 已创建
-- [x] `nginx/playnew.ai.conf` 已创建
-- [x] GitHub Actions 配置已创建
+在部署前和部署后使用此清单确保一切正常。
 
 ---
 
-## 阶段 2: 域名配置
+## 📋 部署前检查
 
-### DNS 记录
-- [ ] `playnew.ai` -> `13.158.222.72`
-- [ ] `www.playnew.ai` -> `13.158.222.72`
-- [ ] `api.playnew.ai` -> `13.158.222.72`
-- [ ] `search.playnew.ai` -> `13.158.222.72`
-- [ ] `n8n.playnew.ai` -> `13.158.222.72`
+### 本地准备
+- [ ] SSH 密钥权限设置为 400
+- [ ] 能够成功 SSH 连接到服务器
+- [ ] 代码已提交到 Git
+- [ ] .gitignore 正确配置 (不包含 .env, *.pem)
+- [ ] GitHub 仓库已创建
 
-### DNS 验证
-```bash
-nslookup playnew.ai
-nslookup api.playnew.ai
-```
-- [ ] DNS 已生效 (可能需要等待 5-30 分钟)
+### 环境变量
+- [ ] 已生成所有安全密钥 (Directus, Meilisearch)
+- [ ] .env.production 已配置
+- [ ] frontend/.env.production 已配置
+- [ ] Supabase 连接字符串正确
+- [ ] Stripe 使用生产密钥 (不是测试密钥)
+- [ ] 所有 API keys 已填写
 
----
-
-## 阶段 3: 服务器初始化
-
-### SSH 连接
-```bash
-ssh ubuntu@13.158.222.72
-```
-- [ ] SSH 连接成功
-
-### 安装必要软件
-```bash
-wget https://raw.githubusercontent.com/YOUR_USERNAME/playnew-0.3/main/setup-server.sh
-sudo bash setup-server.sh
-```
+### 服务器准备
 - [ ] Docker 已安装
 - [ ] Docker Compose 已安装
 - [ ] Nginx 已安装
-- [ ] Certbot 已安装
-- [ ] 防火墙已配置
-- [ ] Swap 已创建
-- [ ] 系统优化已完成
+- [ ] GitHub SSH key 已配置
+- [ ] 代码已克隆到 /var/www/playnew
 
 ---
 
-## 阶段 4: 代码部署
+## 🚀 部署步骤
 
-### 克隆仓库
+### 1. 服务器初始化
 ```bash
-cd /var/www
-sudo git clone git@github.com:YOUR_USERNAME/playnew-0.3.git playnew
-sudo chown -R $USER:$USER playnew
-cd playnew
+# 在服务器上执行
+sudo bash server-init.sh
 ```
-- [ ] 代码已克隆到 `/var/www/playnew`
+- [ ] 系统已更新
+- [ ] Docker 安装成功
+- [ ] Nginx 运行中
+- [ ] Swap 已创建
 
-### 环境变量配置
-
-#### 生成密钥
+### 2. 配置环境
 ```bash
-openssl rand -base64 32  # DIRECTUS_KEY
-openssl rand -base64 32  # DIRECTUS_SECRET
-openssl rand -base64 32  # MEILISEARCH_MASTER_KEY
-```
-- [ ] 密钥已生成
-
-#### 根目录 .env.production
-```bash
+# 在服务器上执行
+cd /var/www/playnew
 cp .env.production.example .env.production
 nano .env.production
 ```
-- [ ] `DIRECTUS_KEY` 已填写
-- [ ] `DIRECTUS_SECRET` 已填写
-- [ ] `MEILISEARCH_MASTER_KEY` 已填写
+- [ ] 密钥已生成并填入
+- [ ] URL 已更新为服务器 IP
+- [ ] 数据库连接字符串正确
 
-#### 前端 .env.production
+### 3. 启动服务
 ```bash
-cp frontend/.env.production.example frontend/.env.production
-nano frontend/.env.production
+# 在服务器上执行
+docker compose -f docker-compose.prod.yml up -d
 ```
-- [ ] `NEXT_PUBLIC_DIRECTUS_URL` = `https://api.playnew.ai`
-- [ ] `NEXT_PUBLIC_MEILISEARCH_HOST` = `https://search.playnew.ai`
-- [ ] `NEXT_PUBLIC_APP_URL` = `https://playnew.ai`
-- [ ] `DIRECTUS_ADMIN_TOKEN` 已填写
-- [ ] `MEILISEARCH_API_KEY` 已填写
-- [ ] `OPENROUTER_API_KEY` 已填写
-- [ ] **重要**: `STRIPE_SECRET_KEY` 已改为生产密钥(pk_live_...)
-- [ ] **重要**: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` 已改为生产密钥
-- [ ] `STRIPE_WEBHOOK_SECRET` 已配置
+- [ ] Directus 容器启动
+- [ ] Meilisearch 容器启动
+- [ ] Frontend 容器启动
+- [ ] n8n 容器启动
+
+### 4. 验证服务
+```bash
+# 检查容器状态
+docker compose -f docker-compose.prod.yml ps
+```
+- [ ] 所有容器显示 "Up"
+- [ ] 没有错误日志
 
 ---
 
-## 阶段 5: SSL 证书
+## ✅ 部署后验证
 
-### 停止 Nginx
-```bash
-sudo systemctl stop nginx
-```
-- [ ] Nginx 已停止
+### 基本功能
+- [ ] 前端可访问: http://IP
+- [ ] Directus 后台可访问: http://IP:8055/admin
+- [ ] Directus 可以登录
+- [ ] Meilisearch 健康检查通过: http://IP:7700/health
 
-### 获取证书
-```bash
-sudo certbot certonly --standalone -d playnew.ai -d www.playnew.ai
-sudo certbot certonly --standalone -d api.playnew.ai
-sudo certbot certonly --standalone -d search.playnew.ai
-sudo certbot certonly --standalone -d n8n.playnew.ai
-```
-- [ ] playnew.ai 证书已获取
-- [ ] api.playnew.ai 证书已获取
-- [ ] search.playnew.ai 证书已获取
-- [ ] n8n.playnew.ai 证书已获取
-
-### 启动 Nginx
-```bash
-sudo systemctl start nginx
-```
-- [ ] Nginx 已启动
-
----
-
-## 阶段 6: Nginx 配置
-
-```bash
-sudo cp nginx/playnew.ai.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/playnew.ai.conf /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo nginx -s reload
-```
-- [ ] Nginx 配置已复制
-- [ ] 软链接已创建
-- [ ] Nginx 配置测试通过
-- [ ] Nginx 已重载
-
----
-
-## 阶段 7: 首次部署
-
-```bash
-./deploy.sh
-```
-- [ ] 部署脚本执行成功
-- [ ] 所有容器已启动
-- [ ] 健康检查通过
-
-### 验证部署
-```bash
-docker-compose -f docker-compose.prod.yml ps
-```
-- [ ] directus 容器运行中
-- [ ] meilisearch 容器运行中
-- [ ] n8n 容器运行中
-- [ ] frontend 容器运行中
-
----
-
-## 阶段 8: 功能测试
-
-### 网站访问
-- [ ] https://playnew.ai 可访问
-- [ ] HTTPS 正常 (绿色锁)
-- [ ] 首页加载正常
-- [ ] 策略页面正常
-- [ ] 新闻页面正常
-
-### API 测试
-- [ ] https://api.playnew.ai/server/health 返回 OK
-- [ ] https://search.playnew.ai/health 返回 OK
-
-### 管理后台
-- [ ] https://api.playnew.ai 可登录 Directus
-- [ ] https://n8n.playnew.ai 可登录 n8n
+### 数据库连接
+- [ ] Directus 成功连接到 Supabase
+- [ ] 可以在 Directus 后台看到数据
+- [ ] 前端可以获取数据
 
 ### 功能测试
+- [ ] 首页正常显示
+- [ ] 策略列表加载正常
+- [ ] 新闻列表加载正常
 - [ ] 搜索功能正常
-- [ ] 用户注册正常
-- [ ] 用户登录正常
-- [ ] 支付测试(使用测试卡: 4242 4242 4242 4242)
-- [ ] 会员功能正常
-
----
-
-## 阶段 9: GitHub Actions 自动部署
-
-### 配置 Secrets
-在 GitHub 仓库 Settings > Secrets and variables > Actions 添加:
-- [ ] `SSH_HOST` = `13.158.222.72`
-- [ ] `SSH_USER` = `ubuntu`
-- [ ] `SSH_PRIVATE_KEY` = SSH 私钥内容
-
-### 测试自动部署
-```bash
-# 本地
-echo "# Test deployment" >> README.md
-git add .
-git commit -m "test: trigger deployment"
-git push origin main
-```
-- [ ] GitHub Actions 触发成功
-- [ ] 部署流程执行成功
-- [ ] 服务器代码已更新
-
----
-
-## 阶段 10: 监控和维护
-
-### 日志检查
-```bash
-docker-compose -f docker-compose.prod.yml logs -f
-```
-- [ ] 无错误日志
-- [ ] 所有服务正常运行
+- [ ] 用户注册/登录正常
+- [ ] 支付功能正常 (如果启用)
 
 ### 性能检查
 ```bash
+# 在服务器上执行
 docker stats
 free -h
 df -h
 ```
-- [ ] CPU 使用率正常
-- [ ] 内存使用率正常
-- [ ] 磁盘空间充足
+- [ ] CPU 使用率正常 (< 80%)
+- [ ] 内存使用正常 (< 3GB)
+- [ ] 磁盘空间充足 (> 20GB 剩余)
 
-### 备份计划
-- [ ] 已设置定期备份脚本
-- [ ] Directus 上传文件备份
-- [ ] Meilisearch 数据备份
-- [ ] n8n 工作流备份
-
----
-
-## 🎉 部署完成!
-
-全部检查完成后,你的 PlayNew 0.3 就成功上线了!
-
-### 最终验证清单
-- [ ] 所有 URL 都能正常访问
-- [ ] HTTPS 全部启用
-- [ ] 用户可以注册和登录
-- [ ] 支付功能正常
-- [ ] 搜索功能正常
-- [ ] 自动部署已配置
-
-### 下一步
-- 监控服务器性能
-- 定期查看日志
-- 测试自动部署
-- 配置监控告警 (可选)
+### 安全检查
+- [ ] 默认密码已更改
+- [ ] 只开放必要端口
+- [ ] 环境变量文件未提交到 Git
+- [ ] SSH key 权限正确 (400)
 
 ---
 
-**问题排查**: 如遇到问题,查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 的"常见问题"章节
+## 🔄 持续维护检查
+
+### 每日
+- [ ] 检查服务运行状态
+- [ ] 查看错误日志
+- [ ] 监控资源使用
+
+### 每周
+- [ ] 备份数据
+- [ ] 检查磁盘空间
+- [ ] 清理旧 Docker 镜像
+
+### 每月
+- [ ] 更新系统包
+- [ ] 更新 Docker 镜像
+- [ ] 检查安全更新
+- [ ] 测试备份恢复
+
+---
+
+## 🆘 故障排查
+
+### 服务无法启动
+```bash
+# 查看日志
+docker compose -f docker-compose.prod.yml logs [service_name]
+
+# 重启服务
+docker compose -f docker-compose.prod.yml restart [service_name]
+
+# 重建服务
+docker compose -f docker-compose.prod.yml up -d --force-recreate [service_name]
+```
+
+### 数据库连接失败
+- [ ] 检查 Supabase 连接字符串
+- [ ] 检查网络连接
+- [ ] 检查 Supabase 项目状态
+
+### 内存不足
+```bash
+# 检查内存使用
+free -h
+
+# 增加 swap
+sudo fallocate -l 4G /swapfile2
+sudo chmod 600 /swapfile2
+sudo mkswap /swapfile2
+sudo swapon /swapfile2
+```
+
+### 端口被占用
+```bash
+# 查看端口占用
+sudo lsof -i :3000
+sudo lsof -i :8055
+
+# 停止占用进程
+sudo kill -9 <PID>
+```
+
+---
+
+## 📞 紧急联系
+
+如果遇到严重问题:
+
+1. **停止所有服务**: `docker compose -f docker-compose.prod.yml down`
+2. **备份数据**: 参考备份命令
+3. **查看日志**: `docker compose -f docker-compose.prod.yml logs`
+4. **回滚代码**: `git checkout <previous_commit>`
+
+---
+
+## ✨ 优化建议
+
+部署成功后可以考虑:
+
+- [ ] 绑定域名
+- [ ] 配置 SSL/HTTPS
+- [ ] 设置 CDN (CloudFlare)
+- [ ] 配置自动备份
+- [ ] 设置监控告警
+- [ ] 优化数据库查询
+- [ ] 启用 Redis 缓存
+- [ ] 配置日志轮转
+
+---
+
+完成所有检查后,你的 PlayNew 0.3 就可以稳定运行了! 🎉

@@ -1,0 +1,371 @@
+{
+  "name": "币圈八卦RSS采集器 - 优化版 (Best Practices)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "定时触发器",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "notes": "每30分钟自动执行一次"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "feeds",
+              "value": "={{ JSON.stringify([\n  { name: '吴说区块链', url: 'https://www.wublock.com/feed', weight: 95, lang: 'zh', category: 'media' },\n  { name: '律动BlockBeats', url: 'https://www.theblockbeats.info/rss', weight: 90, lang: 'zh', category: 'media' },\n  { name: 'PANews', url: 'https://www.panewslab.com/rss.xml', weight: 90, lang: 'zh', category: 'media' },\n  { name: '8BTC', url: 'https://news.8btc.com/rss', weight: 85, lang: 'zh', category: 'media' },\n  { name: '金色财经', url: 'https://www.jinse.com/rss', weight: 80, lang: 'zh', category: 'media' },\n  { name: 'Cointelegraph', url: 'https://cointelegraph.com/rss', weight: 85, lang: 'en', category: 'media' },\n  { name: 'CoinDesk', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', weight: 85, lang: 'en', category: 'media' },\n  { name: 'The Block', url: 'https://www.theblock.co/rss.xml', weight: 90, lang: 'en', category: 'media' },\n  { name: 'Decrypt', url: 'https://decrypt.co/feed', weight: 80, lang: 'en', category: 'media' },\n  { name: 'CryptoSlate', url: 'https://cryptoslate.com/feed/', weight: 75, lang: 'en', category: 'media' }\n]) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rss-sources",
+      "name": "RSS源配置",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300],
+      "notes": "集中管理所有RSS源"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sources-array",
+              "name": "sources",
+              "value": "={{ JSON.parse($json.feeds) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "parse-sources",
+      "name": "解析RSS源列表",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-in-batches",
+      "name": "逐个处理RSS源",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [840, 300],
+      "notes": "使用SplitInBatches逐个处理，避免并发过多"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "ignoreSSLIssues": true
+        }
+      },
+      "id": "rss-read",
+      "name": "读取RSS Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [1040, 300],
+      "continueOnFail": true,
+      "notes": "启用continueOnFail，单个源失败不影响其他源"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "source-name",
+              "name": "sourceName",
+              "value": "={{ $('逐个处理RSS源').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "source-weight",
+              "name": "sourceWeight",
+              "value": "={{ $('逐个处理RSS源').item.json.weight }}",
+              "type": "number"
+            },
+            {
+              "id": "source-lang",
+              "name": "sourceLang",
+              "value": "={{ $('逐个处理RSS源').item.json.lang }}",
+              "type": "string"
+            },
+            {
+              "id": "source-category",
+              "name": "sourceCategory",
+              "value": "={{ $('逐个处理RSS源').item.json.category }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "attach-source-info",
+      "name": "附加来源信息",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1240, 300],
+      "notes": "将RSS源信息附加到每篇文章"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "loop-back",
+      "name": "循环处理",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1040, 480],
+      "notes": "循环回到SplitInBatches处理下一个源"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-all",
+      "name": "合并所有文章",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1440, 300],
+      "notes": "将所有RSS源的文章合并成一个列表"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 币圈八卦关键词过滤和评分\nconst items = $input.all();\nconst results = [];\n\n// 八卦关键词库（分级）\nconst keywords = {\n  // 强八卦词（高权重）- 直接相关的传闻、事件\n  critical: {\n    zh: ['跑路', '卷款', '暴雷', '崩盘', '被捕', '调查', '诉讼', '黑客', '被盗', '漏洞', '破产', '清算'],\n    en: ['rug pull', 'exit scam', 'hack', 'exploit', 'arrest', 'lawsuit', 'bankrupt', 'liquidation'],\n    weight: -15 // 可信度降低\n  },\n  high: {\n    zh: ['传闻', '爆料', '据悉', '消息人士', '内幕', '独家', '泄露', '曝光'],\n    en: ['rumor', 'allegedly', 'sources', 'insider', 'exclusive', 'leak', 'expose'],\n    weight: -10\n  },\n  medium: {\n    zh: ['离职', '辞职', '内讧', '分裂', '解散', '裁员', '抛售', '清仓'],\n    en: ['resign', 'fired', 'dispute', 'split', 'shutdown', 'layoff', 'dump', 'sell-off'],\n    weight: -5\n  },\n  low: {\n    zh: ['争议', '质疑', '批评', '反对', '担忧', '警告'],\n    en: ['controversy', 'criticism', 'concern', 'doubt', 'warn'],\n    weight: -2\n  }\n};\n\nfor (const item of items) {\n  const entry = item.json;\n  const title = entry.title || '';\n  const description = entry.contentSnippet || entry.description || '';\n  const content = entry.content || entry['content:encoded'] || '';\n  const fullText = `${title} ${description} ${content}`.toLowerCase();\n  \n  // 检查是否包含八卦关键词\n  let matches = [];\n  let credibilityImpact = 0;\n  let highestLevel = 'none';\n  \n  for (const [level, data] of Object.entries(keywords)) {\n    const allKeywords = [...data.zh, ...data.en];\n    const levelMatches = allKeywords.filter(kw => \n      fullText.includes(kw.toLowerCase())\n    );\n    \n    if (levelMatches.length > 0) {\n      matches.push(...levelMatches);\n      credibilityImpact += data.weight;\n      if (highestLevel === 'none') highestLevel = level;\n    }\n  }\n  \n  // 如果没有任何八卦关键词，跳过\n  if (matches.length === 0) continue;\n  \n  // 计算可信度评分\n  let credibility = 70; // 基础分（RSS媒体来源相对可信）\n  \n  // 1. 来源权重加成\n  const sourceWeight = entry.sourceWeight || 80;\n  credibility += (sourceWeight - 80) * 0.3;\n  \n  // 2. 关键词影响\n  credibility += credibilityImpact;\n  \n  // 3. 内容质量因素\n  if (entry.creator || entry.author) credibility += 3;\n  if (entry.pubDate || entry.isoDate) credibility += 2;\n  \n  // 内容长度\n  if (content.length > 1000) credibility += 8;\n  else if (content.length > 500) credibility += 5;\n  else if (content.length < 100) credibility -= 5;\n  \n  // 4. 语言因素（中文媒体在币圈通常更快）\n  if (entry.sourceLang === 'zh') credibility += 3;\n  \n  // 限制在30-100范围\n  credibility = Math.max(30, Math.min(95, credibility));\n  \n  // 自动分类\n  let category = '未分类';\n  let tags = [];\n  \n  if (fullText.match(/(项目|project|protocol|token|coin)/i)) {\n    category = '项目传闻';\n    tags.push('项目');\n  }\n  if (fullText.match(/(交易所|exchange|binance|coinbase|okx|bybit)/i)) {\n    category = '交易所八卦';\n    tags.push('交易所');\n  }\n  if (fullText.match(/(融资|investment|funding|raise|vc)/i)) {\n    category = '融资消息';\n    tags.push('融资');\n  }\n  if (fullText.match(/(黑客|hack|exploit|breach|attack)/i)) {\n    category = '安全事件';\n    tags.push('安全');\n  }\n  if (fullText.match(/(监管|regulation|sec|cftc|government)/i)) {\n    category = '监管动态';\n    tags.push('监管');\n  }\n  if (fullText.match(/(defi|dex|swap|liquidity|yield)/i)) {\n    tags.push('DeFi');\n  }\n  if (fullText.match(/(nft|collectible|opensea)/i)) {\n    tags.push('NFT');\n  }\n  \n  // 基础标签\n  tags.push('RSS采集', entry.sourceName || '未知来源');\n  if (matches.length > 0) tags.push(matches[0]);\n  \n  // 构建结果\n  results.push({\n    json: {\n      // 基本信息\n      title: title.substring(0, 200).trim(),\n      summary: (description || content).substring(0, 300).trim(),\n      content: content || description || title,\n      url: entry.link || entry.url || '',\n      \n      // 来源信息\n      source: entry.sourceName || 'RSS',\n      sourceLang: entry.sourceLang || 'zh',\n      sourceCategory: entry.sourceCategory || 'media',\n      author: entry.creator || entry.author || entry.sourceName || '未知',\n      \n      // 时间信息\n      publishedAt: entry.isoDate || entry.pubDate || new Date().toISOString(),\n      \n      // 八卦评估\n      credibilityScore: Math.floor(credibility),\n      gossipLevel: highestLevel,\n      category: category,\n      tags: [...new Set(tags)].slice(0, 8), // 去重，限制8个\n      gossipKeywords: [...new Set(matches)].slice(0, 5),\n      \n      // 内容特征\n      contentLength: content.length,\n      hasAuthor: !!(entry.creator || entry.author),\n      \n      // 唯一标识\n      guid: entry.guid || entry.id || entry.link || `${entry.sourceName}-${Date.now()}`\n    }\n  });\n}\n\n// 排序：可信度降序\nresults.sort((a, b) => b.json.credibilityScore - a.json.credibilityScore);\n\n// 限制数量（每次最多30条）\nconst limited = results.slice(0, 30);\n\nconsole.log(`\\n🔍 八卦过滤统计:`);\nconsole.log(`   原始文章: ${items.length} 篇`);\nconsole.log(`   符合条件: ${results.length} 篇`);\nconsole.log(`   本次处理: ${limited.length} 篇`);\nconsole.log(`   平均可信度: ${Math.floor(limited.reduce((sum, i) => sum + i.json.credibilityScore, 0) / limited.length)}分\\n`);\n\nreturn limited;"
+      },
+      "id": "filter-score",
+      "name": "过滤和评分",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1640, 300],
+      "notes": "使用分级关键词库，智能评分"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "slug",
+              "name": "slug",
+              "value": "=rss-{{ $json.guid.split('/').pop().substring(0, 30).replace(/[^a-z0-9]/gi, '-').toLowerCase() }}-{{ $now.toFormat('yyyyMMdd') }}",
+              "type": "string"
+            },
+            {
+              "id": "dedup-key",
+              "name": "dedupKey",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-slug",
+      "name": "生成唯一标识",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1840, 300],
+      "notes": "生成slug用于去重"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL || 'http://host.docker.internal:8055' }}/items/news",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": {{ JSON.stringify($json.title) }},\n  \"summary\": {{ JSON.stringify($json.summary) }},\n  \"content\": {{ JSON.stringify($json.content.substring(0, 10000)) }},\n  \"ai_summary\": {{ JSON.stringify($json.summary.substring(0, 200)) }},\n  \"source\": {{ JSON.stringify($json.source) }},\n  \"source_type\": \"rss\",\n  \"url\": {{ JSON.stringify($json.url) }},\n  \"slug\": {{ JSON.stringify($json.slug) }},\n  \"news_type\": \"gossip\",\n  \"credibility_score\": {{ $json.credibilityScore }},\n  \"verification_status\": \"unverified\",\n  \"gossip_tags\": {{ JSON.stringify($json.tags) }},\n  \"likes_count\": 0,\n  \"comments_count\": 0,\n  \"status\": {{ $json.credibilityScore >= 65 ? '\"published\"' : '\"draft\"' }},\n  \"category\": \"crypto-general\",\n  \"content_published_at\": {{ JSON.stringify($json.publishedAt) }},\n  \"published_at\": {{ JSON.stringify(new Date().toISOString()) }}\n}",
+        "options": {}
+      },
+      "id": "publish-directus",
+      "name": "发布到Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2040, 300],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "notes": "continueOnFail处理重复记录"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 统计结果并生成报告\nconst items = $input.all();\n\nconst successful = items.filter(i => \n  (i.json.id || i.json.data?.id) && !i.json.error\n);\n\nconst duplicates = items.filter(i => \n  i.json.error?.message?.toLowerCase().includes('duplicate') || \n  i.json.errors?.[0]?.message?.toLowerCase().includes('duplicate') ||\n  i.json.errors?.[0]?.extensions?.code === 'RECORD_NOT_UNIQUE'\n);\n\nconst failed = items.filter(i => \n  i.json.error && !duplicates.includes(i)\n);\n\n// 统计可信度分布\nconst highCredibility = successful.filter(i => {\n  const score = i.json.data?.credibility_score || i.json.credibility_score;\n  return score >= 80;\n}).length;\n\nconst mediumCredibility = successful.filter(i => {\n  const score = i.json.data?.credibility_score || i.json.credibility_score;\n  return score >= 65 && score < 80;\n}).length;\n\nconst lowCredibility = successful.filter(i => {\n  const score = i.json.data?.credibility_score || i.json.credibility_score;\n  return score < 65;\n}).length;\n\nconst summary = {\n  // 基础统计\n  total: items.length,\n  successful: successful.length,\n  duplicates: duplicates.length,\n  failed: failed.length,\n  \n  // 可信度分布\n  stats: {\n    high_credibility: highCredibility,\n    medium_credibility: mediumCredibility,\n    low_credibility: lowCredibility\n  },\n  \n  // 时间戳\n  timestamp: new Date().toISOString(),\n  date: new Date().toLocaleDateString('zh-CN'),\n  time: new Date().toLocaleTimeString('zh-CN')\n};\n\n// 打印详细日志\nconsole.log('\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');\nconsole.log('📊 RSS八卦采集统计报告');\nconsole.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');\nconsole.log(`📅 时间: ${summary.date} ${summary.time}`);\nconsole.log('');\nconsole.log('📈 采集结果:');\nconsole.log(`   ✅ 成功发布: ${summary.successful} 条`);\nconsole.log(`   ⚠️  重复跳过: ${summary.duplicates} 条`);\nconsole.log(`   ❌ 失败: ${summary.failed} 条`);\nconsole.log(`   📊 总计: ${summary.total} 条`);\nconsole.log('');\nconsole.log('🎯 可信度分布:');\nconsole.log(`   🌟 高可信(≥80): ${summary.stats.high_credibility} 条`);\nconsole.log(`   ⭐ 中可信(65-79): ${summary.stats.medium_credibility} 条`);\nconsole.log(`   ⚡ 低可信(<65): ${summary.stats.low_credibility} 条`);\n\nif (successful.length > 0) {\n  console.log('');\n  console.log('📰 最新发布（前5条）:');\n  successful.slice(0, 5).forEach((item, i) => {\n    const data = item.json.data || item.json;\n    const title = data.title?.substring(0, 40) || '无标题';\n    const score = data.credibility_score || 0;\n    const source = data.source || '未知';\n    console.log(`   ${i + 1}. [${score}分] ${title}... (${source})`);\n  });\n}\n\nif (failed.length > 0) {\n  console.log('');\n  console.log('⚠️  失败详情:');\n  failed.slice(0, 3).forEach((item, i) => {\n    const error = item.json.error?.message || item.json.errors?.[0]?.message || '未知错误';\n    console.log(`   ${i + 1}. ${error}`);\n  });\n}\n\nconsole.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n');\n\nreturn [{ json: summary }];"
+      },
+      "id": "summary-stats",
+      "name": "生成统计报告",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2240, 300],
+      "notes": "详细的统计报告和日志"
+    }
+  ],
+  "connections": {
+    "定时触发器": {
+      "main": [
+        [
+          {
+            "node": "RSS源配置",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS源配置": {
+      "main": [
+        [
+          {
+            "node": "解析RSS源列表",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析RSS源列表": {
+      "main": [
+        [
+          {
+            "node": "逐个处理RSS源",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "逐个处理RSS源": {
+      "main": [
+        [
+          {
+            "node": "读取RSS Feed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "合并所有文章",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "读取RSS Feed": {
+      "main": [
+        [
+          {
+            "node": "附加来源信息",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "附加来源信息": {
+      "main": [
+        [
+          {
+            "node": "逐个处理RSS源",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "合并所有文章": {
+      "main": [
+        [
+          {
+            "node": "过滤和评分",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "过滤和评分": {
+      "main": [
+        [
+          {
+            "node": "生成唯一标识",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成唯一标识": {
+      "main": [
+        [
+          {
+            "node": "发布到Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "发布到Directus": {
+      "main": [
+        [
+          {
+            "node": "生成统计报告",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-06T00:00:00.000Z",
+      "updatedAt": "2025-01-06T00:00:00.000Z",
+      "id": "crypto-gossip",
+      "name": "币圈八卦"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "2.0"
+}

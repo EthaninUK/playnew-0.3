@@ -1,0 +1,697 @@
+const axios = require('axios');
+
+const DIRECTUS_URL = 'http://localhost:8055';
+
+// ===== 12.5 OKX 合约做市计划 =====
+const STRATEGY_12_5 = {
+  title: 'OKX 合约做市计划 - 衍生品流动性挖矿',
+  slug: 'orderbook-12-5-okx-derivatives-market-maker-program',
+  summary: '参与 OKX 合约做市商计划,为永续合约和期权提供流动性,享受 Maker 返佣最高 0.02%,叠加平台激励奖励,年化 30-100% APY,支持 API 自动化做市。',
+
+  category: 'orderbook',
+  category_l1: 'derivatives',
+  category_l2: '订单簿做市',
+
+  difficulty_level: 4,
+  risk_level: 4,
+
+  apy_min: 30,
+  apy_max: 100,
+  threshold_capital: '20000 美元起',
+  threshold_capital_min: 20000,
+  time_commitment: '初始设置 4 小时(API + 策略),每日监控 2 小时',
+  time_commitment_minutes: 300,
+  threshold_tech_level: 'advanced',
+
+  content: `> **适合人群**: 专业做市者,衍生品交易者
+> **阅读时间**: 约 10 分钟
+> **关键词**: OKX / 合约做市 / 期权做市 / 返佣 / API
+
+---
+
+## 🎯 什么是 OKX 合约做市计划?
+
+### 项目概述
+
+**OKX 流动性激励**:
+- 针对永续合约和期权市场
+- Maker 返佣 + 做市奖励
+- 月度排名奖金池
+- 专属 API 支持
+
+**费率优势**(做市商专属):
+
+| 产品 | 普通 Maker | 做市商 Maker | 返佣 |
+|------|-----------|-------------|------|
+| 永续合约 | 0.020% | **-0.005%** | ✅ |
+| 交割合约 | 0.020% | **-0.005%** | ✅ |
+| 期权 | 0.030% | **0.000%** | - |
+
+**关键**: 做市商挂单不仅免费,还能获得返佣!
+
+---
+
+## 📋 参与做市计划指南
+
+### 准备工作
+
+**申请资格**:
+1. 过去 30 天日均资产 > $100,000
+2. 或承诺日均做市量 > $5M
+3. 提交做市计划和策略说明
+
+**申请流程**:
+\`\`\`
+1. 联系 OKX 机构业务(mm@okx.com)
+2. 提交资料:
+   - 资金证明
+   - 做市策略概述
+   - 预期交易量
+3. 等待审核(3-7 个工作日)
+4. 获批后开通专属 API
+\`\`\`
+
+### 操作流程
+
+**步骤 1: 配置 API**
+
+**生成 API 密钥**:
+1. OKX 后台 → API 管理
+2. 创建交易 API(需要双重验证)
+3. 配置 IP 白名单
+
+**API 权限**:
+- ✅ 读取账户信息
+- ✅ 交易(现货/合约)
+- ❌ 提币(安全考虑)
+
+**步骤 2: 开发做市策略**
+
+**永续合约做市**(Python 示例):
+
+```python
+import okx.Trade as Trade
+import okx.MarketData as Market
+import time
+
+# 初始化 API
+tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, use_server_time=False, flag='0')
+marketAPI = Market.MarketAPI(flag='0')
+
+# 做市参数
+instId = 'BTC-USDT-SWAP'  # BTC 永续
+spread = 0.0003  # 0.03% 价差
+size = '1'  # 每单 1 张合约
+
+def get_mid_price(instId):
+    """获取中间价"""
+    ticker = marketAPI.get_ticker(instId=instId)
+    bid = float(ticker['data'][0]['bidPx'])
+    ask = float(ticker['data'][0]['askPx'])
+    return (bid + ask) / 2
+
+def cancel_all_orders(instId):
+    """取消所有挂单"""
+    orders = tradeAPI.get_order_list(instType='SWAP')
+    for order in orders['data']:
+        if order['instId'] == instId and order['state'] == 'live':
+            tradeAPI.cancel_order(instId=instId, ordId=order['ordId'])
+
+def place_mm_orders(instId, mid_price, spread, size):
+    """挂买卖单"""
+    cancel_all_orders(instId)
+
+    # 计算买卖价
+    bid_price = round(mid_price * (1 - spread), 1)
+    ask_price = round(mid_price * (1 + spread), 1)
+
+    # 挂买单
+    buy_order = tradeAPI.place_order(
+        instId=instId,
+        tdMode='cross',  # 全仓模式
+        side='buy',
+        ordType='limit',
+        px=str(bid_price),
+        sz=size
+    )
+
+    # 挂卖单
+    sell_order = tradeAPI.place_order(
+        instId=instId,
+        tdMode='cross',
+        side='sell',
+        ordType='limit',
+        px=str(ask_price),
+        sz=size
+    )
+
+    print(f'[{instId}] 挂单: Buy {bid_price} | Sell {ask_price}')
+    return buy_order, sell_order
+
+# 主循环
+while True:
+    try:
+        mid_price = get_mid_price(instId)
+        place_mm_orders(instId, mid_price, spread, size)
+        time.sleep(3)  # 每 3 秒更新
+    except Exception as e:
+        print(f'错误: {e}')
+        time.sleep(10)
+```
+
+**步骤 3: 期权做市**(高级)
+
+**期权做市要点**:
+- 使用 Black-Scholes 模型定价
+- 监控隐含波动率(IV)
+- 动态调整价差
+
+```python
+import numpy as np
+from scipy.stats import norm
+
+def black_scholes_call(S, K, T, r, sigma):
+    """Black-Scholes 看涨期权定价"""
+    d1 = (np.log(S/K) + (r + sigma**2/2)*T) / (sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    call = S*norm.cdf(d1) - K*np.exp(-r*T)*norm.cdf(d2)
+    return call
+
+# 示例: BTC $40,000, 行权价 $42,000, 30 天到期
+S = 40000  # 现价
+K = 42000  # 行权价
+T = 30/365  # 到期时间(年)
+r = 0.05  # 无风险利率
+sigma = 0.8  # 波动率 80%
+
+fair_value = black_scholes_call(S, K, T, r, sigma)
+print(f'期权公允价值: ${fair_value:.2f}')
+
+# 做市价格
+bid_price = fair_value * 0.98  # -2%
+ask_price = fair_value * 1.02  # +2%
+print(f'做市价: Bid ${bid_price:.2f} | Ask ${ask_price:.2f}')
+```
+
+---
+
+## 💰 收益案例
+
+### 案例 1: 永续合约做市
+
+**初始资金**: $50,000
+
+**参数**:
+- Maker 返佣: -0.005%
+- 价差: 0.03%
+- 日成交 $1,000,000(双边)
+
+**收益**:
+```
+日返佣 = $1M × 0.005% = $50
+日价差利润 = $1M/2 × 0.03% = $150
+日总收益 = $200
+
+月收益 = $200 × 30 = $6,000
+年化 = $6,000 × 12 / $50,000 = 144%
+```
+
+**额外奖励**(月度排名前 10):
+- 奖金池 $50,000
+- 按交易量分配
+- 额外 +20-50% 年化
+
+---
+
+### 案例 2: 期权做市
+
+**初始资金**: $100,000
+
+**参数**:
+- 期权价差: 2-5%(期权流动性差)
+- 日成交 $200,000
+
+**收益**:
+```
+日价差利润 = $200,000 × 3% / 2 = $3,000
+月收益 = $3,000 × 30 = $90,000
+年化 = $90,000 × 12 / $100,000 = 1080%
+```
+
+**风险**: 期权风险极高,需要专业对冲策略
+
+---
+
+## 🔥 高级策略
+
+### 策略 1: Delta 中性做市
+
+**对冲方向风险**:
+1. 永续合约做市
+2. 实时计算 Delta
+3. 在现货市场反向对冲
+
+### 策略 2: 波动率套利
+
+**期权做市 + Vega 对冲**:
+- 做市多个不同到期日的期权
+- 对冲 Vega(波动率风险)
+- 赚取价差,规避 IV 波动
+
+### 策略 3: 跨市场套利
+
+**OKX 与其他平台价差**:
+- 在 OKX 做市
+- 在 Binance/Bybit 对冲
+- 赚取跨平台价差
+
+---
+
+## ⚠️ 风险提示
+
+### 主要风险
+
+**1. 合约爆仓风险**:
+- 做市需要持仓
+- 极端行情可能爆仓
+- 必须设置止损
+
+**2. 期权风险**:
+- Greeks 风险(Delta, Gamma, Vega, Theta)
+- 需要专业知识和对冲工具
+
+**3. API 风险**:
+- 网络延迟
+- API 限频
+- 订单拒绝
+
+**4. 政策变化**:
+- 做市商计划可能调整
+- 返佣比例变化
+
+---
+
+## 📊 总结
+
+OKX 合约做市是高风险高回报策略:
+
+**核心优势**:
+1. **高返佣**: -0.005% Maker 费率
+2. **额外奖励**: 月度奖金池
+3. **产品丰富**: 永续 + 期权
+
+**适合人群**:
+- 专业做市者
+- 有衍生品经验
+- 熟悉编程和 API
+
+**不适合**:
+- 新手交易者
+- 小资金(< $20K)
+- 不懂期权和对冲
+
+**推荐**: 资深交易者可尝试,永续合约做市相对安全,期权做市需谨慎。
+
+OKX 合约做市,专业玩家的舞台!🎯
+`,
+
+  steps: [
+    { step_number: 1, title: '申请做市商资格', description: '联系 OKX 机构业务,提交资料申请。', estimated_time: '1-2 周' },
+    { step_number: 2, title: '配置 API', description: '创建交易 API,设置 IP 白名单和权限。', estimated_time: '1 小时' },
+    { step_number: 3, title: '开发做市策略', description: '编写永续合约或期权做市脚本(Python)。', estimated_time: '2-3 天' },
+    { step_number: 4, title: '回测与优化', description: '历史数据回测,优化参数。', estimated_time: '1 周' },
+    { step_number: 5, title: '实盘运行', description: '部署到 VPS,实盘运行并监控。', estimated_time: '每日 2 小时' },
+  ],
+};
+
+// ===== 12.6 Bybit 做市商激励 =====
+const STRATEGY_12_6 = {
+  title: 'Bybit 做市商激励 - 合约流动性挖矿',
+  slug: 'orderbook-12-6-bybit-market-maker-incentive',
+  summary: '参与 Bybit 合约流动性提供者计划,享受 Maker 返佣 + 交易挖矿双重收益,BIT 代币奖励,年化 25-90% APY,支持 USDT 和 USDC 永续合约做市。',
+
+  category: 'orderbook',
+  category_l1: 'derivatives',
+  category_l2: '订单簿做市',
+
+  difficulty_level: 3,
+  risk_level: 3,
+
+  apy_min: 25,
+  apy_max: 90,
+  threshold_capital: '10000 美元起',
+  threshold_capital_min: 10000,
+  time_commitment: '初始设置 3 小时,每日监控 1 小时',
+  time_commitment_minutes: 210,
+  threshold_tech_level: 'advanced',
+
+  content: `> **适合人群**: CEX 做市者,API 交易者
+> **阅读时间**: 约 8 分钟
+> **关键词**: Bybit / 流动性挖矿 / Maker 返佣 / BIT 代币
+
+---
+
+## 🎯 什么是 Bybit 做市商激励?
+
+### 项目概述
+
+**双重收益**:
+1. **Maker 返佣**: 挂单成交返还手续费
+2. **交易挖矿**: 赚取 BIT 代币奖励
+
+**费率结构**(VIP 用户):
+
+| VIP 等级 | Maker 费率 | Taker 费率 | BIT 奖励 |
+|---------|-----------|-----------|---------|
+| VIP 0 | 0.0200% | 0.0550% | - |
+| VIP 1 | 0.0160% | 0.0500% | ✅ |
+| VIP 2 | 0.0120% | 0.0450% | ✅ |
+| VIP Pro | **-0.0050%** | 0.0300% | ✅✅ |
+
+**VIP Pro 门槛**: 30 天交易量 > $10M 或资产 > $500K
+
+---
+
+## 📋 参与指南
+
+### 准备工作
+
+**达成 VIP Pro**:
+- **方法 A**: 刷交易量至 $10M/月
+- **方法 B**: 持仓 > $500K
+- **方法 C**: 申请机构做市商(推荐)
+
+**机构做市商申请**:
+```
+1. 访问 Bybit 官网 → 机构服务
+2. 填写申请表:
+   - 公司信息(个人可用个体户)
+   - 资金证明($50K+)
+   - 做市策略简述
+3. 等待审核(5-10 个工作日)
+4. 获批后享受最优费率
+```
+
+### 操作流程
+
+**步骤 1: API 配置**
+
+**创建 API**:
+1. Bybit 账户 → API 管理
+2. 创建 Unified Trading API
+3. 权限: 读取 + 交易(不要勾选提币)
+4. 添加 IP 白名单
+
+**步骤 2: 做市策略**
+
+**简单双边挂单**(Python + pybit):
+
+```python
+from pybit.unified_trading import HTTP
+import time
+
+# 初始化 Bybit
+session = HTTP(
+    testnet=False,
+    api_key="YOUR_API_KEY",
+    api_secret="YOUR_API_SECRET",
+)
+
+# 参数
+symbol = "BTCUSDT"
+spread = 0.0004  # 0.04% 价差
+qty = "0.01"  # 每单 0.01 BTC
+
+def get_mid_price(symbol):
+    """获取中间价"""
+    ticker = session.get_tickers(category="linear", symbol=symbol)
+    bid = float(ticker['result']['list'][0]['bid1Price'])
+    ask = float(ticker['result']['list'][0]['ask1Price'])
+    return (bid + ask) / 2
+
+def cancel_all(symbol):
+    """取消所有订单"""
+    session.cancel_all_orders(category="linear", symbol=symbol)
+
+def place_orders(symbol, mid_price, spread, qty):
+    """挂双边订单"""
+    cancel_all(symbol)
+
+    bid_price = round(mid_price * (1 - spread), 1)
+    ask_price = round(mid_price * (1 + spread), 1)
+
+    # 挂买单
+    session.place_order(
+        category="linear",
+        symbol=symbol,
+        side="Buy",
+        orderType="Limit",
+        qty=qty,
+        price=str(bid_price),
+        timeInForce="PostOnly",  # 确保挂单
+    )
+
+    # 挂卖单
+    session.place_order(
+        category="linear",
+        symbol=symbol,
+        side="Sell",
+        orderType="Limit",
+        qty=qty,
+        price=str(ask_price),
+        timeInForce="PostOnly",
+    )
+
+    print(f'[{symbol}] Buy {bid_price} | Sell {ask_price}')
+
+# 主循环
+while True:
+    try:
+        mid = get_mid_price(symbol)
+        place_orders(symbol, mid, spread, qty)
+        time.sleep(5)
+    except Exception as e:
+        print(f'Error: {e}')
+        time.sleep(10)
+```
+
+**步骤 3: 交易挖矿(BIT 奖励)**
+
+**BIT 奖励规则**:
+- 每日交易量越高,BIT 奖励越多
+- VIP 用户奖励翻倍
+- BIT 可提现或抵扣手续费
+
+**查看 BIT 收益**:
+```python
+# 获取 BIT 余额
+balance = session.get_wallet_balance(accountType="UNIFIED", coin="BIT")
+bit_balance = balance['result']['list'][0]['coin'][0]['walletBalance']
+print(f'BIT 余额: {bit_balance}')
+```
+
+---
+
+## 💰 收益案例
+
+### 案例 1: VIP Pro 做市
+
+**初始资金**: $50,000
+
+**参数**:
+- Maker 返佣: -0.005%
+- 价差: 0.04%
+- 日成交 $800,000
+
+**收益**:
+```
+日返佣 = $800K × 0.005% = $40
+日价差 = $800K/2 × 0.04% = $160
+日总计 = $200
+
+年化(仅做市) = $200 × 365 / $50K = 146%
+```
+
+**加上 BIT 奖励**(假设日均 100 BIT,BIT = $0.5):
+```
+日 BIT 收益 = 100 × $0.5 = $50
+总年化 = ($200 + $50) × 365 / $50K = 182.5%
+```
+
+---
+
+### 案例 2: 多币种分散
+
+**资金分配**:
+- BTC: $20,000
+- ETH: $15,000
+- SOL: $10,000
+- 其他山寨: $5,000
+
+**优势**:
+- 山寨币价差更大(0.1-0.5%)
+- 分散风险
+- 总收益可能更高
+
+---
+
+## 🔥 高级策略
+
+### 策略 1: 动态价差
+
+**根据波动率调整**:
+```python
+import numpy as np
+
+def calculate_volatility(prices):
+    """计算历史波动率"""
+    returns = np.diff(np.log(prices))
+    return np.std(returns) * np.sqrt(365)
+
+# 获取历史价格
+klines = session.get_kline(category="linear", symbol="BTCUSDT", interval="5", limit=100)
+prices = [float(k['close']) for k in klines['result']['list']]
+
+vol = calculate_volatility(prices)
+
+# 动态调整价差
+if vol > 0.8:  # 高波动
+    spread = 0.001  # 加宽价差
+elif vol < 0.4:  # 低波动
+    spread = 0.0002  # 缩小价差
+else:
+    spread = 0.0004  # 正常
+```
+
+### 策略 2: 库存管理
+
+**避免单向累积**:
+```python
+def get_position(symbol):
+    """获取持仓"""
+    position = session.get_positions(category="linear", symbol=symbol)
+    size = float(position['result']['list'][0]['size'])
+    side = position['result']['list'][0]['side']
+    return size if side == 'Buy' else -size
+
+pos = get_position("BTCUSDT")
+
+# 如果多头过多,增加卖单
+if pos > 0.5:
+    sell_qty = qty * 1.5  # 增加卖单量
+    buy_qty = qty * 0.5   # 减少买单量
+elif pos < -0.5:
+    sell_qty = qty * 0.5
+    buy_qty = qty * 1.5
+else:
+    sell_qty = buy_qty = qty
+```
+
+---
+
+## ⚠️ 风险提示
+
+### 主要风险
+
+**1. 合约风险**:
+- 永续合约有爆仓风险
+- 必须控制杠杆
+
+**2. BIT 价格风险**:
+- BIT 代币价格波动
+- 奖励实际价值不确定
+
+**3. 技术风险**:
+- API 限频
+- 网络延迟
+- 订单失败
+
+**4. 市场风险**:
+- 极端行情价差扩大
+- 做市策略失效
+
+---
+
+## 📊 总结
+
+Bybit 做市商激励是 CEX 的优质策略:
+
+**核心优势**:
+1. **双重收益**: 返佣 + BIT 奖励
+2. **门槛适中**: $10K 可开始
+3. **API 友好**: pybit 库易用
+
+**适合人群**:
+- 有编程基础
+- 熟悉永续合约
+- 资金 $10K+
+
+**不适合**:
+- 完全新手
+- 不懂 API
+- 无法承受合约风险
+
+**推荐**: 中级交易者可作为主力策略,年化 50-150%。
+
+Bybit 做市,性价比之选!💎
+`,
+
+  steps: [
+    { step_number: 1, title: '达成 VIP Pro', description: '刷交易量或申请机构做市商。', estimated_time: '1-2 周' },
+    { step_number: 2, title: '配置 API', description: '创建 Unified Trading API,设置权限。', estimated_time: '1 小时' },
+    { step_number: 3, title: '编写策略', description: '用 Python + pybit 开发做市脚本。', estimated_time: '1-2 天' },
+    { step_number: 4, title: '部署运行', description: '租用 VPS,部署策略并运行。', estimated_time: '2 小时' },
+    { step_number: 5, title: '监控优化', description: '每日监控成交、收益、BIT 奖励。', estimated_time: '每日 1 小时' },
+  ],
+};
+
+// ===== 上传逻辑 =====
+async function getAuthToken() {
+  const response = await axios.post(`${DIRECTUS_URL}/auth/login`, {
+    email: 'the_uk1@outlook.com',
+    password: 'Mygcdjmyxzg2026!',
+  });
+  return response.data.data.access_token;
+}
+
+async function addStrategies() {
+  try {
+    const token = await getAuthToken();
+    const strategies = [STRATEGY_12_5, STRATEGY_12_6];
+
+    console.log('\n开始创建 12.5 和 12.6 策略...\n');
+
+    for (let i = 0; i < strategies.length; i++) {
+      const strategy = {
+        ...strategies[i],
+        status: 'published',
+        is_featured: true,
+        view_count: 0,
+        bookmark_count: 0,
+        published_at: new Date().toISOString(),
+      };
+
+      const response = await axios.post(
+        `${DIRECTUS_URL}/items/strategies`,
+        strategy,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log(`✅ [${i + 1}/2] ${strategy.title}`);
+      console.log(`   ID: ${response.data.data.id}`);
+      console.log(`   Slug: ${response.data.data.slug}\n`);
+    }
+
+    console.log('🎉 创建完成！');
+    console.log('访问: http://localhost:3000/strategies?category=orderbook\n');
+  } catch (error) {
+    console.error('\n❌ 创建失败:', error.response?.data || error.message);
+  }
+}
+
+addStrategies();

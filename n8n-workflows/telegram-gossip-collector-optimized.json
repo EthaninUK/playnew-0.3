@@ -1,0 +1,196 @@
+{
+  "name": "币圈八卦Telegram监控 - 优化版 (Best Practices)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "channel_post",
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram消息监听",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "telegram-gossip-webhook-optimized",
+      "credentials": {
+        "telegramApi": {
+          "id": "PLACEHOLDER",
+          "name": "Telegram Bot"
+        }
+      },
+      "notes": "实时监听Telegram频道/群组消息"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析和初步过滤Telegram消息\nconst message = $input.first().json.message || $input.first().json.channel_post;\n\nif (!message || !message.text) {\n  console.log('⚠️  跳过：非文本消息');\n  return [];\n}\n\nconst text = message.text;\nconst chat = message.chat;\nconst from = message.from || {};\n\n// 币圈八卦关键词检测（分级）\nconst keywords = {\n  critical: {\n    zh: ['跑路', '卷款', '暴雷', '崩盘', '破产', '清算', '被捕', '黑客', '被盗'],\n    en: ['rug pull', 'exit scam', 'hack', 'exploit', 'arrest', 'bankrupt', 'liquidation'],\n    score: -15\n  },\n  high: {\n    zh: ['传闻', '爆料', '据悉', '消息', '内幕', '独家', '泄露'],\n    en: ['rumor', 'allegedly', 'sources', 'insider', 'exclusive', 'leak'],\n    score: -10\n  },\n  medium: {\n    zh: ['离职', '辞职', '内讧', '分裂', '解散', '裁员', '抛售'],\n    en: ['resign', 'fired', 'dispute', 'split', 'shutdown', 'layoff', 'dump'],\n    score: -5\n  },\n  low: {\n    zh: ['争议', '质疑', '批评', '担忧', '警告'],\n    en: ['controversy', 'criticism', 'concern', 'doubt', 'warn'],\n    score: -2\n  }\n};\n\n// 检查是否包含关键词\nlet matches = [];\nlet gossipScore = 0;\nlet gossipLevel = 'none';\n\nfor (const [level, data] of Object.entries(keywords)) {\n  const allKeywords = [...data.zh, ...data.en];\n  const levelMatches = allKeywords.filter(kw => \n    text.toLowerCase().includes(kw.toLowerCase())\n  );\n  \n  if (levelMatches.length > 0) {\n    matches.push(...levelMatches);\n    gossipScore += data.score;\n    if (gossipLevel === 'none') gossipLevel = level;\n  }\n}\n\n// 如果没有八卦关键词，跳过\nif (matches.length === 0) {\n  console.log(`⚠️  跳过：无八卦关键词 - ${chat.title || chat.username}`);\n  return [];\n}\n\n// 计算可信度\nlet credibility = 60; // Telegram基础可信度（中等）\n\n// 1. 频道类型因素\nconst isChannel = chat.type === 'channel';\nconst isGroup = chat.type === 'group' || chat.type === 'supergroup';\nif (isChannel) credibility += 10; // 频道比群组可信\nelse if (isGroup) credibility += 5;\n\n// 2. 八卦关键词影响\ncredibility += gossipScore;\n\n// 3. 消息质量因素\nconst textLength = text.length;\nif (textLength > 1000) credibility += 10;\nelse if (textLength > 500) credibility += 8;\nelse if (textLength > 200) credibility += 5;\nelse if (textLength < 50) credibility -= 10; // 太短不可信\n\n// 4. 媒体内容（有证据）\nif (message.photo) credibility += 8;\nif (message.video) credibility += 8;\nif (message.document) credibility += 5;\n\n// 5. 链接（有来源）\nconst hasUrls = message.entities?.some(e => e.type === 'url' || e.type === 'text_link');\nif (hasUrls) credibility += 10;\n\n// 6. 转发消息（二手信息）\nif (message.forward_from || message.forward_from_chat) {\n  credibility -= 5;\n}\n\n// 7. 回复消息（讨论中）\nif (message.reply_to_message) {\n  credibility += 3;\n}\n\n// 限制范围\ncredibility = Math.max(25, Math.min(90, credibility));\n\n// 自动分类\nlet category = '未分类';\nlet tags = [];\n\nconst lowerText = text.toLowerCase();\n\nif (lowerText.match(/(项目|project|protocol|token)/i)) {\n  category = '项目传闻';\n  tags.push('项目');\n}\nif (lowerText.match(/(交易所|exchange|binance|okx|bybit)/i)) {\n  category = '交易所八卦';\n  tags.push('交易所');\n}\nif (lowerText.match(/(融资|investment|funding|raise)/i)) {\n  category = '融资消息';\n  tags.push('融资');\n}\nif (lowerText.match(/(黑客|hack|exploit|attack)/i)) {\n  category = '安全事件';\n  tags.push('安全');\n}\nif (lowerText.match(/(监管|regulation|sec)/i)) {\n  category = '监管动态';\n  tags.push('监管');\n}\nif (lowerText.match(/(defi|dex|swap)/i)) {\n  tags.push('DeFi');\n}\nif (lowerText.match(/(nft|opensea)/i)) {\n  tags.push('NFT');\n}\nif (lowerText.match(/(airdrop|空投)/i)) {\n  tags.push('空投');\n}\n\n// 基础标签\ntags.push('Telegram', chat.title || chat.username || 'Private', '实时爆料');\nif (matches[0]) tags.push(matches[0]);\n\n// 提取媒体信息\nlet mediaInfo = [];\nif (message.photo) {\n  mediaInfo.push({\n    type: 'photo',\n    count: message.photo.length,\n    file_id: message.photo[message.photo.length - 1].file_id\n  });\n}\nif (message.video) {\n  mediaInfo.push({\n    type: 'video',\n    file_id: message.video.file_id,\n    duration: message.video.duration\n  });\n}\nif (message.document) {\n  mediaInfo.push({\n    type: 'document',\n    file_name: message.document.file_name,\n    file_id: message.document.file_id\n  });\n}\n\n// 提取链接\nlet urls = [];\nif (message.entities) {\n  urls = message.entities\n    .filter(e => e.type === 'url' || e.type === 'text_link')\n    .map(e => e.url || text.substring(e.offset, e.offset + e.length));\n}\n\nconsole.log(`✅ 检测到八卦: [${credibility}分] ${chat.title || chat.username} - ${text.substring(0, 50)}...`);\n\nreturn [{\n  json: {\n    // 基本信息\n    messageId: message.message_id,\n    text: text,\n    textLength: textLength,\n    \n    // 聊天信息\n    chatId: chat.id,\n    chatTitle: chat.title || chat.username || 'Private',\n    chatType: chat.type,\n    chatUsername: chat.username || null,\n    \n    // 发送者信息\n    author: from.username || from.first_name || 'Anonymous',\n    authorId: from.id || null,\n    authorFirstName: from.first_name || null,\n    authorLastName: from.last_name || null,\n    \n    // 时间信息\n    timestamp: new Date(message.date * 1000).toISOString(),\n    messageDate: message.date,\n    \n    // 媒体内容\n    hasPhoto: !!message.photo,\n    hasVideo: !!message.video,\n    hasDocument: !!message.document,\n    hasAudio: !!message.audio,\n    hasVoice: !!message.voice,\n    mediaInfo: mediaInfo,\n    \n    // 链接\n    hasLinks: hasUrls,\n    urls: urls,\n    \n    // 消息特征\n    forwardFrom: message.forward_from?.username || null,\n    forwardFromChat: message.forward_from_chat?.title || null,\n    replyTo: message.reply_to_message?.message_id || null,\n    \n    // 八卦评估\n    credibilityScore: Math.floor(credibility),\n    gossipLevel: gossipLevel,\n    gossipKeywords: [...new Set(matches)].slice(0, 5),\n    category: category,\n    tags: [...new Set(tags)].slice(0, 8),\n    \n    // 原始数据（用于调试）\n    rawMessage: JSON.stringify(message).substring(0, 5000)\n  }\n}];"
+      },
+      "id": "parse-filter",
+      "name": "解析和过滤消息",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "notes": "智能过滤和评分"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "slug",
+              "name": "slug",
+              "value": "=tg-{{ $json.chatId }}-{{ $json.messageId }}-{{ $now.toFormat('yyyyMMdd') }}",
+              "type": "string"
+            },
+            {
+              "id": "telegram-url",
+              "name": "telegramUrl",
+              "value": "={{ $json.chatUsername ? 'https://t.me/' + $json.chatUsername + '/' + $json.messageId : 'https://t.me/c/' + String($json.chatId).replace('-100', '') + '/' + $json.messageId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-meta",
+      "name": "生成元数据",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [640, 300],
+      "notes": "生成slug和Telegram链接"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 构建富文本内容\nconst data = $input.first().json;\n\nlet content = `# Telegram 实时八卦\\n\\n`;\n\n// 来源信息\ncontent += `## 📱 来源信息\\n\\n`;\ncontent += `- **频道/群组**: ${data.chatTitle}\\n`;\nif (data.chatUsername) {\n  content += `- **用户名**: @${data.chatUsername}\\n`;\n}\ncontent += `- **类型**: ${data.chatType === 'channel' ? '频道' : data.chatType === 'supergroup' || data.chatType === 'group' ? '群组' : '私聊'}\\n`;\ncontent += `- **发送者**: @${data.author}\\n`;\ncontent += `- **时间**: ${new Date(data.timestamp).toLocaleString('zh-CN')}\\n`;\ncontent += `\\n`;\n\n// 内容特征\nif (data.hasPhoto || data.hasVideo || data.hasDocument || data.hasLinks) {\n  content += `## 🎯 内容特征\\n\\n`;\n  if (data.hasPhoto) content += `- 📷 包含图片\\n`;\n  if (data.hasVideo) content += `- 🎬 包含视频\\n`;\n  if (data.hasDocument) content += `- 📎 包含文件\\n`;\n  if (data.hasLinks) {\n    content += `- 🔗 包含链接:\\n`;\n    data.urls.forEach(url => {\n      content += `  - ${url}\\n`;\n    });\n  }\n  content += `\\n`;\n}\n\n// 八卦评估\ncontent += `## 🎲 八卦评估\\n\\n`;\ncontent += `- **可信度**: ${data.credibilityScore}/100\\n`;\ncontent += `- **等级**: ${data.gossipLevel === 'critical' ? '🔴 严重' : data.gossipLevel === 'high' ? '🟠 高' : data.gossipLevel === 'medium' ? '🟡 中' : '🟢 低'}\\n`;\ncontent += `- **类别**: ${data.category}\\n`;\nif (data.gossipKeywords.length > 0) {\n  content += `- **关键词**: ${data.gossipKeywords.join(', ')}\\n`;\n}\ncontent += `\\n`;\n\n// 原文\ncontent += `## 📝 消息原文\\n\\n`;\ncontent += data.text;\n\nif (data.forwardFrom || data.forwardFromChat) {\n  content += `\\n\\n---\\n\\n`;\n  content += `**🔀 转发自**: ${data.forwardFromChat || '@' + data.forwardFrom}\\n`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    richContent: content,\n    summary: data.text.substring(0, 300)\n  }\n}];"
+      },
+      "id": "build-content",
+      "name": "构建富文本内容",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 300],
+      "notes": "生成结构化的Markdown内容"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL || 'http://host.docker.internal:8055' }}/items/news",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": {{ JSON.stringify($json.text.substring(0, 150)) }},\n  \"summary\": {{ JSON.stringify($json.summary) }},\n  \"content\": {{ JSON.stringify($json.richContent) }},\n  \"ai_summary\": {{ JSON.stringify($json.text.substring(0, 200)) }},\n  \"source\": {{ JSON.stringify('Telegram ' + $json.chatTitle) }},\n  \"source_type\": \"telegram\",\n  \"url\": {{ JSON.stringify($json.telegramUrl) }},\n  \"slug\": {{ JSON.stringify($json.slug) }},\n  \"news_type\": \"gossip\",\n  \"credibility_score\": {{ $json.credibilityScore }},\n  \"verification_status\": \"unverified\",\n  \"gossip_tags\": {{ JSON.stringify($json.tags) }},\n  \"likes_count\": 0,\n  \"comments_count\": 0,\n  \"status\": {{ $json.credibilityScore >= 60 ? '\"published\"' : '\"draft\"' }},\n  \"category\": \"crypto-general\",\n  \"content_published_at\": {{ JSON.stringify($json.timestamp) }},\n  \"published_at\": {{ JSON.stringify(new Date().toISOString()) }}\n}",
+        "options": {}
+      },
+      "id": "publish-directus",
+      "name": "发布到Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 300],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput",
+      "notes": "发布，自动处理重复"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 处理结果并记录日志\nconst item = $input.first().json;\n\nlet status = 'unknown';\nlet message = '';\n\nif (item.id || item.data?.id) {\n  status = 'success';\n  const data = item.data || item;\n  message = `✅ 发布成功: [${data.credibility_score || item.credibilityScore}分] ${data.title?.substring(0, 50) || '无标题'}...`;\n  \n  console.log(message);\n  console.log(`   来源: ${data.source || item.chatTitle}`);\n  console.log(`   链接: ${data.url || item.telegramUrl}`);\n  console.log(`   状态: ${data.status === 'published' ? '已发布' : '草稿'}`);\n  \n} else if (item.error?.message?.toLowerCase().includes('duplicate') || \n           item.errors?.[0]?.message?.toLowerCase().includes('duplicate') ||\n           item.errors?.[0]?.extensions?.code === 'RECORD_NOT_UNIQUE') {\n  status = 'duplicate';\n  message = `⚠️  重复消息: ${item.text?.substring(0, 50) || item.title?.substring(0, 50)}...`;\n  console.log(message);\n  \n} else if (item.error || item.errors) {\n  status = 'failed';\n  const error = item.error?.message || item.errors?.[0]?.message || '未知错误';\n  message = `❌ 发布失败: ${error}`;\n  console.error(message);\n  console.error(`   内容: ${item.text?.substring(0, 50)}...`);\n  \n} else {\n  status = 'unknown';\n  message = `⚠️  未知状态`;\n  console.warn(message);\n}\n\nreturn [{\n  json: {\n    status: status,\n    message: message,\n    timestamp: new Date().toISOString(),\n    original: item\n  }\n}];"
+      },
+      "id": "log-result",
+      "name": "记录结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 300],
+      "notes": "详细的日志记录"
+    }
+  ],
+  "connections": {
+    "Telegram消息监听": {
+      "main": [
+        [
+          {
+            "node": "解析和过滤消息",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "解析和过滤消息": {
+      "main": [
+        [
+          {
+            "node": "生成元数据",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "生成元数据": {
+      "main": [
+        [
+          {
+            "node": "构建富文本内容",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "构建富文本内容": {
+      "main": [
+        [
+          {
+            "node": "发布到Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "发布到Directus": {
+      "main": [
+        [
+          {
+            "node": "记录结果",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-06T00:00:00.000Z",
+      "updatedAt": "2025-01-06T00:00:00.000Z",
+      "id": "crypto-gossip",
+      "name": "币圈八卦"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "2.0"
+}

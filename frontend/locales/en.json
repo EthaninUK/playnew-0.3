@@ -1,0 +1,206 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "viewAll": "View All",
+    "viewMore": "View More",
+    "backToList": "Back to List",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "submit": "Submit",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "share": "Share",
+    "like": "Like",
+    "bookmark": "Bookmark",
+    "copied": "Copied",
+    "error": "Error",
+    "success": "Success",
+    "comingSoon": "Coming Soon"
+  },
+  "nav": {
+    "home": "Home",
+    "strategies": "Strategies",
+    "news": "News",
+    "gossip": "Crypto Gossip",
+    "arbitrage": "Arbitrage",
+    "pricing": "Membership",
+    "profile": "Profile",
+    "favorites": "Favorites",
+    "settings": "Settings",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  },
+  "hero": {
+    "badge": "PlayNew · New Plays",
+    "title": "New Plays",
+    "subtitle": "Your Only Connection in Crypto!",
+    "description": "Connect Web3 Players, Share Latest Strategies",
+    "subdescription": "From DeFi Yields to Airdrop Opportunities, From Protocol Research to Market Insights",
+    "exploreStrategies": "Explore Strategies",
+    "upgradeMembership": "Upgrade Membership",
+    "stats": {
+      "activeUsers": "Active Users",
+      "featuredStrategies": "Featured Strategies",
+      "totalRevenue": "Total Revenue (¥)",
+      "monthlyGrowth": "Monthly Growth"
+    }
+  },
+  "home": {
+    "strategiesCard": {
+      "title": "Strategy Library",
+      "badge": "Strategies",
+      "description": "Explore verified DeFi strategies, airdrop opportunities, liquidity mining and various profit-making methods",
+      "cta": "Browse All Strategies"
+    },
+    "newsCard": {
+      "title": "Industry News",
+      "badge": "Live Updates",
+      "description": "Track the latest cryptocurrency news, protocol updates, market dynamics and industry insights",
+      "cta": "View Latest News"
+    },
+    "categories": {
+      "title": "Popular Categories",
+      "description": "Choose the strategy types you're interested in",
+      "viewAll": "View All"
+    },
+    "featured": {
+      "title": "Featured Strategies",
+      "description": "High-quality strategies curated by our team",
+      "viewAll": "View All",
+      "expectedReturn": "Expected Return",
+      "airdropPotential": "Airdrop Potential",
+      "capitalThreshold": "Capital Requirement"
+    },
+    "latestNews": {
+      "title": "Latest News",
+      "description": "Track industry dynamics in real-time",
+      "viewAll": "View All",
+      "viewAllNews": "View All News"
+    },
+    "ctaSection": {
+      "badge": "Join Our Community",
+      "title": "New Plays, Your Only Connection in Crypto!",
+      "description": "users are using PlayNew to discover the latest Web3 opportunities",
+      "explore": "Explore Strategy Library Now",
+      "viewPlans": "View Membership Plans"
+    }
+  },
+  "strategies": {
+    "title": "Strategy Library",
+    "description": "Explore curated cryptocurrency investment strategies, from stable yields to high-risk high-return",
+    "searchPlaceholder": "Search strategies...",
+    "filterByCategory": "Filter by Category",
+    "filterByRisk": "Filter by Risk",
+    "allCategories": "All Categories",
+    "allRisks": "All Risks",
+    "featuredOnly": "Featured Only",
+    "sortBy": "Sort By",
+    "sortOptions": {
+      "newest": "Newest",
+      "mostViewed": "Most Viewed",
+      "highestReturn": "Highest Return",
+      "lowestRisk": "Lowest Risk"
+    },
+    "noResults": "No strategies found",
+    "riskLevels": {
+      "0": "Unknown",
+      "1": "Very Low",
+      "2": "Low Risk",
+      "3": "Medium Risk",
+      "4": "Medium-High",
+      "5": "High Risk"
+    },
+    "details": {
+      "overview": "Overview",
+      "howItWorks": "How It Works",
+      "requirements": "Requirements",
+      "risks": "Risk Warning",
+      "tutorial": "Tutorial",
+      "relatedStrategies": "Related Strategies",
+      "backToStrategies": "Back to Strategies",
+      "expectedReturn": "Expected Return",
+      "capitalRequired": "Capital Required",
+      "riskLevel": "Risk Level",
+      "timeCommitment": "Time Commitment",
+      "category": "Category",
+      "tags": "Tags",
+      "lastUpdated": "Last Updated",
+      "views": "Views"
+    }
+  },
+  "news": {
+    "title": "Industry News",
+    "description": "Track the latest cryptocurrency news, protocol updates, market dynamics and industry insights",
+    "searchPlaceholder": "Search news...",
+    "filterByCategory": "Filter by Category",
+    "allCategories": "All Categories",
+    "importantOnly": "Important Only",
+    "backToNews": "Back to News List",
+    "details": {
+      "publishedAt": "Published",
+      "source": "Source",
+      "viewOriginal": "View Original",
+      "visitLink": "Visit Link",
+      "relatedNews": "Related News"
+    }
+  },
+  "gossip": {
+    "title": "Crypto Gossip",
+    "description": "Latest cryptocurrency community updates, project gossip and industry stories",
+    "searchPlaceholder": "Search gossip...",
+    "filterByTag": "Filter by Tag",
+    "allTags": "All Tags",
+    "hotOnly": "Hot Only",
+    "backToGossip": "Back to Gossip List"
+  },
+  "arbitrage": {
+    "title": "Arbitrage Opportunities",
+    "description": "Discover cross-platform and cross-chain arbitrage opportunities",
+    "filterByType": "Filter by Type",
+    "allTypes": "All Types",
+    "backToArbitrage": "Back to Arbitrage List"
+  },
+  "auth": {
+    "loginRequired": "Login Required to View Details",
+    "loginDescription": "Please login or register to view full content",
+    "registerDescription": "Register for free access to all content on the site",
+    "freeAccess": "Free access to all content after registration",
+    "loginButton": "Login",
+    "registerButton": "Create Account",
+    "orRegister": "Or create an account"
+  },
+  "footer": {
+    "tagline": "Your only connection in crypto! Explore the latest Web3 strategies, master DeFi yield tactics, and track real-time news.",
+    "product": {
+      "title": "Product",
+      "strategies": "Strategy Library",
+      "news": "News Center",
+      "gossip": "Crypto Gossip",
+      "membership": "Membership"
+    },
+    "resources": {
+      "title": "Resources",
+      "guide": "User Guide",
+      "faq": "FAQ",
+      "risk": "Risk Warning"
+    },
+    "legal": {
+      "title": "Legal",
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "disclaimer": "Disclaimer"
+    },
+    "copyright": "PlayNew.ai. All rights reserved.",
+    "slogan": "Explore Web3 New Plays",
+    "riskWarning": "For educational purposes only, investment involves risks"
+  },
+  "language": {
+    "zh": "马来西亚(中文)",
+    "en": "English"
+  }
+}

@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Menu, X, User, Heart, LogOut, Settings, Sparkles, Zap, TrendingUp, Crown } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Search, Menu, X, User, Heart, LogOut, Settings, Sparkles, Zap, TrendingUp, Crown, Flame, ArrowLeftRight, Gift, FileText, Users, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SearchDialog } from './SearchDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { BalanceDisplay } from '@/components/web3/BalanceDisplay';
 
 interface Subscription {
   membership: {
@@ -32,6 +36,8 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const { user, loading, signOut } = useAuth();
+  const { t } = useLanguage();
+  const pathname = usePathname();
 
   // Fetch user subscription
   useEffect(() => {
@@ -95,8 +101,14 @@ export function Header() {
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-lg opacity-30 group-hover:opacity-50 transition-opacity"></div>
 
                   {/* Logo 图标 */}
-                  <div className="relative p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                    <Sparkles className="h-5 w-5 text-white" />
+                  <div className="relative w-10 h-10 flex items-center justify-center">
+                    <img
+                      src="/c.svg"
+                      alt="PlayNew Logo"
+                      width="40"
+                      height="40"
+                      className="object-contain"
+                    />
                   </div>
                 </div>
 
@@ -115,37 +127,111 @@ export function Header() {
               <div className="hidden md:ml-10 md:flex md:space-x-1">
                 <Link
                   href="/"
-                  className="group relative px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors ${
+                    pathname === '/'
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
                 >
-                  <span className="relative z-10">首页</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <span className="relative z-10">{t.nav.home}</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg transition-opacity ${
+                    pathname === '/' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
                 </Link>
 
                 <Link
                   href="/strategies"
-                  className="group relative px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    pathname?.startsWith('/strategies')
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
                 >
-                  <Zap className="h-3.5 w-3.5" />
-                  <span className="relative z-10">玩法库</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Zap className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">{t.nav.strategies}</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg transition-opacity ${
+                    pathname?.startsWith('/strategies') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
                 </Link>
 
                 <Link
                   href="/news"
-                  className="group relative px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    pathname?.startsWith('/news')
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400'
+                  }`}
                 >
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span className="relative z-10">快讯</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <TrendingUp className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">{t.nav.news}</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg transition-opacity ${
+                    pathname?.startsWith('/news') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
                 </Link>
 
                 <Link
-                  href="/pricing"
+                  href="/leaderboard"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    pathname?.startsWith('/leaderboard')
+                      ? 'text-purple-600 dark:text-purple-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400'
+                  }`}
+                >
+                  <Trophy className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">排行榜</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg transition-opacity ${
+                    pathname?.startsWith('/leaderboard') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
+                </Link>
+
+                {/* 今日玩法暂时隐藏 */}
+                {/* <Link
+                  href="/play-exchange"
                   className="group relative px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors flex items-center gap-1.5"
                 >
-                  <Crown className="h-3.5 w-3.5" />
-                  <span className="relative z-10">会员</span>
+                  <Gift className="h-3.5 w-3.5" />
+                  <span className="relative z-10">今日玩法</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </Link> */}
+
+                <Link
+                  href="/gossip"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    pathname?.startsWith('/gossip')
+                      ? 'text-orange-600 dark:text-orange-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400'
+                  }`}
+                >
+                  <Flame className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">{t.nav.gossip}</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-orange-50 to-pink-50 dark:from-orange-950/30 dark:to-pink-950/30 rounded-lg transition-opacity ${
+                    pathname?.startsWith('/gossip') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
+                </Link>
+
+                {/* 套利功能暂时隐藏 */}
+                {/* <Link
+                  href="/arbitrage"
+                  className="group relative px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  <span className="relative z-10">{t.nav.arbitrage}</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-cyan-50 dark:from-emerald-950/30 dark:to-cyan-950/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                </Link> */}
+
+                <Link
+                  href="/pricing"
+                  className={`group relative px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    pathname?.startsWith('/pricing') || pathname?.startsWith('/membership')
+                      ? 'text-purple-600 dark:text-purple-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-purple-600 dark:hover:text-purple-400'
+                  }`}
+                >
+                  <Crown className="h-3.5 w-3.5 relative z-10" />
+                  <span className="relative z-10">会员</span>
+                  <div className={`absolute inset-0 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg transition-opacity ${
+                    pathname?.startsWith('/pricing') || pathname?.startsWith('/membership') ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}></div>
                 </Link>
               </div>
             </div>
@@ -157,7 +243,7 @@ export function Header() {
                 className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-100/80 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700/50 rounded-xl transition-all group border border-slate-200 dark:border-slate-700"
               >
                 <Search className="h-4 w-4 text-slate-600 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
-                <span className="text-sm text-slate-600 dark:text-slate-400">搜索</span>
+                <span className="text-sm text-slate-600 dark:text-slate-400">{t.common?.search || '搜索'}</span>
                 <kbd className="inline-flex h-5 select-none items-center gap-1 rounded bg-white dark:bg-slate-900 px-1.5 font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                   <span className="text-xs">⌘</span>K
                 </kbd>
@@ -171,6 +257,12 @@ export function Header() {
               >
                 <Search className="h-5 w-5" />
               </Button>
+
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+
+              {/* PlayPass Balance Display */}
+              <BalanceDisplay variant="compact" showRechargeButton={true} />
 
               {/* User Menu */}
               {!loading && (
@@ -214,28 +306,21 @@ export function Header() {
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href="/membership" className="cursor-pointer">
-                            <Crown className="mr-2 h-4 w-4 text-purple-500" />
+                          <Link href="/member-center" className="cursor-pointer">
+                            <Trophy className="mr-2 h-4 w-4 text-blue-500" />
                             <span className="font-medium">会员中心</span>
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href="/profile" className="cursor-pointer">
-                            <User className="mr-2 h-4 w-4" />
-                            <span>个人中心</span>
+                          <Link href="/member-center?tab=submit" className="cursor-pointer">
+                            <FileText className="mr-2 h-4 w-4 text-purple-500" />
+                            <span className="font-medium">提交玩法</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href="/favorites" className="cursor-pointer">
-                            <Heart className="mr-2 h-4 w-4" />
-                            <span>我的收藏</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile/settings" className="cursor-pointer">
-                            <Settings className="mr-2 h-4 w-4" />
-                            <span>设置</span>
+                          <Link href="/member-center?tab=invite" className="cursor-pointer">
+                            <Users className="mr-2 h-4 w-4 text-pink-500" />
+                            <span className="font-medium">邀请好友</span>
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -284,7 +369,7 @@ export function Header() {
                   className="flex items-center gap-2 px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-950/30 dark:hover:to-purple-950/30 rounded-xl mx-2 transition-all group"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <span className="text-base font-medium">首页</span>
+                  <span className="text-base font-medium">{t.nav.home}</span>
                 </Link>
                 <Link
                   href="/strategies"
@@ -292,7 +377,7 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Zap className="h-4 w-4" />
-                  <span className="text-base font-medium">玩法库</span>
+                  <span className="text-base font-medium">{t.nav.strategies}</span>
                 </Link>
                 <Link
                   href="/news"
@@ -300,8 +385,34 @@ export function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-base font-medium">快讯</span>
+                  <span className="text-base font-medium">{t.nav.news}</span>
                 </Link>
+                {/* 今日玩法暂时隐藏 */}
+                {/* <Link
+                  href="/play-exchange"
+                  className="flex items-center gap-2 px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/30 dark:hover:to-pink-950/30 rounded-xl mx-2 transition-all group"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Gift className="h-4 w-4" />
+                  <span className="text-base font-medium">今日玩法</span>
+                </Link> */}
+                <Link
+                  href="/gossip"
+                  className="flex items-center gap-2 px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-pink-50 dark:hover:from-orange-950/30 dark:hover:to-pink-950/30 rounded-xl mx-2 transition-all group"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Flame className="h-4 w-4" />
+                  <span className="text-base font-medium">{t.nav.gossip}</span>
+                </Link>
+                {/* 套利功能暂时隐藏 */}
+                {/* <Link
+                  href="/arbitrage"
+                  className="flex items-center gap-2 px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-cyan-50 dark:hover:from-emerald-950/30 dark:hover:to-cyan-950/30 rounded-xl mx-2 transition-all group"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                  <span className="text-base font-medium">{t.nav.arbitrage}</span>
+                </Link> */}
                 {/* 暂时隐藏 - 待后续开发
                 <Link
                   href="/providers"
@@ -325,7 +436,6 @@ export function Header() {
                     {user ? (
                       <>
                         <div className="border-t border-slate-200 dark:border-slate-800 my-3" />
-                        {/* Membership Badge in Mobile Menu */}
                         {subscription && (
                           <div className="flex items-center justify-between px-4 py-2 mx-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl mb-2">
                             <div className="flex items-center gap-2">
@@ -338,12 +448,12 @@ export function Header() {
                           </div>
                         )}
                         <Link
-                          href="/membership"
+                          href="/pricing"
                           className="flex items-center gap-2 px-4 py-3 text-purple-600 dark:text-purple-400 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:hover:from-purple-950/30 dark:hover:to-pink-950/30 rounded-xl mx-2 transition-all font-medium"
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           <Crown className="h-4 w-4" />
-                          <span className="text-base font-medium">会员中心</span>
+                          <span className="text-base font-medium">会员</span>
                         </Link>
                         <Link
                           href="/profile"

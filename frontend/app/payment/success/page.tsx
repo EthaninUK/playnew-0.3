@@ -1,158 +1,114 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Check, Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
-function SuccessContent() {
-  const searchParams = useSearchParams();
+export default function PaymentSuccessPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sessionId = searchParams.get('session_id');
-
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [membership, setMembership] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
     if (sessionId) {
       verifyPayment(sessionId);
     } else {
-      setStatus('error');
+      setLoading(false);
+      setVerifying(false);
     }
   }, [sessionId]);
 
   const verifyPayment = async (sessionId: string) => {
     try {
-      const response = await fetch(`/api/verify-payment?session_id=${sessionId}`);
-
-      if (!response.ok) {
-        throw new Error('Payment verification failed');
-      }
+      const response = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
 
       const data = await response.json();
-      setMembership(data.membershipName || '');
-      setStatus('success');
+
+      if (data.success) {
+        setVerifying(false);
+      }
     } catch (error) {
-      console.error('Verification error:', error);
-      setStatus('error');
+      console.error('Error verifying payment:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (status === 'loading') {
+  if (loading) {
     return (
-      <div className="container max-w-2xl mx-auto px-4 py-16">
-        <Card className="p-12">
-          <div className="text-center">
-            <Loader2 className="h-16 w-16 text-purple-600 mx-auto mb-6 animate-spin" />
-            <h1 className="text-2xl font-bold mb-2">正在确认支付...</h1>
-            <p className="text-muted-foreground">请稍候,我们正在处理您的订单</p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (status === 'error') {
-    return (
-      <div className="container max-w-2xl mx-auto px-4 py-16">
-        <Card className="p-12 border-red-200 dark:border-red-900">
-          <div className="text-center">
-            <div className="h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-6">
-              <span className="text-3xl">❌</span>
-            </div>
-            <h1 className="text-2xl font-bold mb-2">支付验证失败</h1>
-            <p className="text-muted-foreground mb-8">
-              无法验证您的支付信息,请联系客服或重试
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button variant="outline" onClick={() => router.push('/pricing')}>
-                返回定价页
-              </Button>
-              <Button onClick={() => router.push('/membership')}>
-                查看会员中心
-              </Button>
-            </div>
-          </div>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">正在验证支付...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-16">
-      <Card className="p-12 border-green-200 dark:border-green-900">
-        <div className="text-center">
-          <CheckCircle2 className="h-16 w-16 text-green-600 mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-4">支付成功!</h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            欢迎成为 <span className="font-semibold text-purple-600">{membership}</span> 会员
-          </p>
-
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-6 mb-8">
-            <h2 className="font-semibold mb-3">您已解锁以下权益:</h2>
-            <div className="space-y-2 text-left max-w-md mx-auto">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <span className="text-sm">访问更多高级策略内容</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <span className="text-sm">无限制浏览最新快讯</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <span className="text-sm">优先获得新功能体验</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                <span className="text-sm">专属会员徽章</span>
-              </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-4">
+      <Card className="max-w-2xl w-full p-12 text-center">
+        {verifying ? (
+          <>
+            <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Loader2 className="w-10 h-10 text-blue-600 dark:text-blue-400 animate-spin" />
             </div>
-          </div>
+            <h1 className="text-3xl font-bold mb-4">正在处理您的订阅...</h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              请稍候，我们正在激活您的会员权益
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check className="w-10 h-10 text-green-600 dark:text-green-400" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4 text-green-600 dark:text-green-400">
+              支付成功！
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8">
+              感谢您的订阅！您的会员权益已激活，现在可以享受所有高级功能。
+            </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              onClick={() => router.push('/strategies')}
-              className="group"
-            >
-              开始探索策略
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => router.push('/membership')}
-            >
-              查看会员信息
-            </Button>
-          </div>
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-6 mb-8">
+              <p className="text-sm text-muted-foreground mb-2">
+                我们已向您的邮箱发送订阅确认邮件
+              </p>
+              <p className="text-sm font-medium">
+                订单编号: {sessionId?.slice(0, 20)}...
+              </p>
+            </div>
 
-          <p className="text-xs text-muted-foreground mt-8">
-            订阅确认邮件已发送至您的邮箱
-          </p>
-        </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                onClick={() => router.push('/member-center')}
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                前往会员中心
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              <Button
+                onClick={() => router.push('/strategies')}
+                size="lg"
+                variant="outline"
+              >
+                浏览玩法策略
+              </Button>
+            </div>
+          </>
+        )}
       </Card>
     </div>
-  );
-}
-
-export default function PaymentSuccessPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="container max-w-2xl mx-auto px-4 py-16">
-          <Card className="p-12">
-            <div className="text-center">
-              <Loader2 className="h-16 w-16 text-purple-600 mx-auto mb-6 animate-spin" />
-              <p className="text-muted-foreground">加载中...</p>
-            </div>
-          </Card>
-        </div>
-      }
-    >
-      <SuccessContent />
-    </Suspense>
   );
 }

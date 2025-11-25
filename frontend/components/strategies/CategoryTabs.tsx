@@ -40,10 +40,8 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
           setIsSticky(false);
         }
 
-        // 如果已经是 sticky 状态，且继续向下滚动，则自动收起
-        if (isSticky && currentScrollY > lastScrollY && isExpanded) {
-          setIsExpanded(false);
-        }
+        // 移除自动收起逻辑 - 让用户手动控制
+        // 之前的自动收起会导致用户点击展开后立即收起
       }
 
       setLastScrollY(currentScrollY);
@@ -54,7 +52,7 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isSticky, lastScrollY, isExpanded]);
+  }, [isSticky, lastScrollY]);
 
   // 切换展开/收起
   const toggleExpanded = () => {
@@ -67,16 +65,21 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
     setIsExpanded(true);
   };
 
+  // 当用户点击二级分类后，自动收起
+  const handleCategoryClick = () => {
+    setIsExpanded(false);
+  };
+
   return (
-    <div ref={containerRef} className="border-b bg-background/95 backdrop-blur-sm sticky top-16 z-20 shadow-sm">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div ref={containerRef} className="border-b bg-background/95 backdrop-blur-sm sticky top-16 z-30 shadow-md">
+      <div className="container mx-auto px-2 sm:px-4 lg:px-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           {/* Main Category Tabs */}
           <div className="flex items-center border-b">
-            <TabsList className="flex-1 justify-start h-auto p-0 bg-transparent border-b-0 overflow-x-auto flex-nowrap scrollbar-hide">
+            <TabsList className="flex-1 justify-start h-auto p-0 bg-transparent border-b-0 overflow-x-auto flex-nowrap scrollbar-hide snap-x snap-mandatory">
               <TabsTrigger
                 value="all"
-                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-3"
+                className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 sm:px-4 py-2.5 sm:py-3 text-sm snap-start"
                 asChild
               >
                 <Link href="/strategies" scroll={false}>
@@ -88,7 +91,7 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
                 <TabsTrigger
                   key={group.parent.id}
                   value={group.parent.slug}
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-3 whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-3 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap text-sm snap-start"
                   asChild
                 >
                   <Link href={`/strategies?group=${group.parent.slug}`} scroll={false}>
@@ -103,18 +106,18 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
               variant="ghost"
               size="sm"
               onClick={toggleExpanded}
-              className="ml-2 flex-shrink-0"
+              className="ml-1 sm:ml-2 flex-shrink-0 px-2 sm:px-3"
               aria-label={isExpanded ? "收起分类" : "展开分类"}
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">收起</span>
+                  <ChevronUp className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline text-xs">收起</span>
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  <span className="hidden sm:inline">展开</span>
+                  <ChevronDown className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline text-xs">展开</span>
                 </>
               )}
             </Button>
@@ -123,36 +126,40 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
           {/* All Categories View */}
           <TabsContent
             value="all"
-            className={`mt-0 overflow-hidden transition-all duration-300 ease-in-out ${
-              isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'
-            }`}
-            style={{
-              maxHeight: isExpanded ? 'fit-content' : '0',
-              paddingTop: isExpanded ? '1.5rem' : '0',
-              paddingBottom: isExpanded ? '1.5rem' : '0',
-            }}
+            className="mt-0 bg-background"
           >
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              style={{
+                maxHeight: isExpanded ? '2000px' : '0',
+                paddingTop: isExpanded ? '1.5rem' : '0',
+                paddingBottom: isExpanded ? '1.5rem' : '0',
+              }}
+            >
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
               {categoryGroups.map((group) =>
                 group.children.map((category) => (
                   <Link
                     key={category.id}
                     href={`/strategies?category=${category.slug}`}
                     scroll={false}
-                    className={`group relative overflow-hidden rounded-lg border p-3 transition-all hover:shadow-lg hover:scale-[1.02] ${
+                    onClick={handleCategoryClick}
+                    className={`group relative overflow-hidden rounded-lg border p-2 sm:p-3 transition-all hover:shadow-lg hover:scale-[1.02] active:scale-95 ${
                       currentCategory === category.slug
                         ? 'bg-primary/10 border-primary shadow-md'
                         : 'bg-card hover:border-primary/50'
                     }`}
                   >
-                    <div className="flex items-start gap-2">
-                      <div className="text-base shrink-0">{category.icon}</div>
+                    <div className="flex items-start gap-1.5 sm:gap-2">
+                      <div className="text-sm sm:text-base shrink-0">{category.icon}</div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-sm mb-0.5 truncate group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-xs sm:text-sm mb-0.5 truncate group-hover:text-primary transition-colors">
                           {category.name}
                         </h3>
                         {category.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 hidden sm:block">
                             {category.description}
                           </p>
                         )}
@@ -164,6 +171,7 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
                 ))
               )}
             </div>
+            </div>
           </TabsContent>
 
           {/* Individual Group Views */}
@@ -171,42 +179,46 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
             <TabsContent
               key={group.parent.id}
               value={group.parent.slug}
-              className={`mt-0 overflow-hidden transition-all duration-300 ease-in-out ${
-                isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'
-              }`}
-              style={{
-                maxHeight: isExpanded ? 'fit-content' : '0',
-                paddingTop: isExpanded ? '1.5rem' : '0',
-                paddingBottom: isExpanded ? '1.5rem' : '0',
-              }}
+              className="mt-0 bg-background"
             >
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold mb-2">{group.parent.name}</h2>
-                <p className="text-muted-foreground">
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+                style={{
+                  maxHeight: isExpanded ? '2000px' : '0',
+                  paddingTop: isExpanded ? '1.5rem' : '0',
+                  paddingBottom: isExpanded ? '1.5rem' : '0',
+                }}
+              >
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">{group.parent.name}</h2>
+                <p className="text-muted-foreground text-sm">
                   共 {group.children.length} 个子分类
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                 {group.children.map((category) => (
                   <Link
                     key={category.id}
                     href={`/strategies?category=${category.slug}&group=${group.parent.slug}`}
                     scroll={false}
-                    className={`group relative overflow-hidden rounded-lg border p-3 transition-all hover:shadow-lg hover:scale-[1.02] ${
+                    onClick={handleCategoryClick}
+                    className={`group relative overflow-hidden rounded-lg border p-2 sm:p-3 transition-all hover:shadow-lg hover:scale-[1.02] active:scale-95 ${
                       currentCategory === category.slug
                         ? 'bg-primary/10 border-primary shadow-md'
                         : 'bg-card hover:border-primary/50'
                     }`}
                   >
-                    <div className="flex items-start gap-2">
-                      <div className="text-base shrink-0">{category.icon}</div>
+                    <div className="flex items-start gap-1.5 sm:gap-2">
+                      <div className="text-sm sm:text-base shrink-0">{category.icon}</div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-sm mb-0.5 truncate group-hover:text-primary transition-colors">
+                        <h3 className="font-semibold text-xs sm:text-sm mb-0.5 truncate group-hover:text-primary transition-colors">
                           {category.name}
                         </h3>
                         {category.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 hidden sm:block">
                             {category.description}
                           </p>
                         )}
@@ -217,6 +229,7 @@ export function CategoryTabs({ categoryGroups, currentCategory, currentGroup }: 
                     <div className="absolute -bottom-8 -right-8 w-24 h-24 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
                 ))}
+              </div>
               </div>
             </TabsContent>
           ))}

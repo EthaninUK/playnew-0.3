@@ -1,0 +1,30 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#B794F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 左下角圆点 -->
+  <circle cx="100" cy="550" r="40" fill="url(#grad1)"/>
+
+  <!-- 主体 > 形状 -->
+  <g>
+    <!-- 上部横条 (左上角圆角矩形向右延伸) -->
+    <path d="M 60 60 C 60 40 75 25 95 25 L 380 25 C 420 25 455 45 480 75 L 480 135 C 480 150 470 160 455 160 L 280 160 C 255 160 240 175 235 190"
+          fill="url(#grad1)" stroke="none"/>
+
+    <!-- 中间 S 曲线连接 -->
+    <path d="M 235 190 C 230 200 235 210 250 210 L 380 210 C 410 210 435 235 450 265 L 510 365 C 520 385 520 405 510 425 L 450 525 C 435 555 410 580 380 580 L 250 580 C 235 580 230 590 235 600"
+          fill="url(#grad1)" stroke="none"/>
+
+    <!-- 下部横条 (向左延伸到左下圆角) -->
+    <path d="M 235 600 L 240 615 C 245 625 255 630 270 630 L 455 630 C 470 630 480 640 480 655 L 480 715 C 455 745 420 765 380 765 L 95 765 C 75 765 60 750 60 730 L 60 655 C 60 640 70 630 85 630 L 185 630"
+          fill="url(#grad1)" stroke="none"/>
+  </g>
+
+  <!-- 右上装饰圆点 -->
+  <circle cx="530" cy="440" r="35" fill="url(#grad1)"/>
+</svg>

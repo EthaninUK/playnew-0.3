@@ -1,0 +1,182 @@
+{
+  "name": "RSS 八卦采集器 - 完全免费",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger - 每30分钟",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 定义RSS源列表\nconst rssSources = [\n  // 中文媒体\n  { name: '吴说区块链', url: 'https://www.wublock.com/feed', weight: 95, lang: 'zh' },\n  { name: '律动BlockBeats', url: 'https://www.theblockbeats.info/rss', weight: 90, lang: 'zh' },\n  { name: 'PANews', url: 'https://www.panewslab.com/rss.xml', weight: 90, lang: 'zh' },\n  { name: '8BTC', url: 'https://news.8btc.com/rss', weight: 85, lang: 'zh' },\n  { name: '金色财经', url: 'https://www.jinse.com/rss', weight: 80, lang: 'zh' },\n  \n  // 英文媒体\n  { name: 'Cointelegraph', url: 'https://cointelegraph.com/rss', weight: 85, lang: 'en' },\n  { name: 'CoinDesk', url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', weight: 85, lang: 'en' },\n  { name: 'The Block', url: 'https://www.theblock.co/rss.xml', weight: 90, lang: 'en' },\n  { name: 'Decrypt', url: 'https://decrypt.co/feed', weight: 80, lang: 'en' },\n  { name: 'CryptoSlate', url: 'https://cryptoslate.com/feed/', weight: 75, lang: 'en' },\n];\n\nreturn rssSources.map(source => ({\n  json: source\n}));"
+      },
+      "id": "generate-rss-sources",
+      "name": "Generate RSS Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "id": "rss-read",
+      "name": "RSS Read Feed",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 过滤和评分新闻\nconst items = $input.all();\nconst results = [];\n\n// 八卦关键词库\nconst gossipKeywords = {\n  // 强八卦词（权重高）\n  strong: [\n    // 中文\n    '传闻', '爆料', '据悉', '消息人士', '内幕', '独家',\n    '跑路', '卷款', '暴雷', '崩盘', '清仓', '抛售',\n    '被捕', '调查', '诉讼', '起诉', '罚款',\n    '离职', '辞职', '内讧', '分裂', '解散',\n    '黑客', '攻击', '被盗', '漏洞',\n    \n    // 英文\n    'rumor', 'allegedly', 'sources', 'insider', 'exclusive',\n    'exit scam', 'rug pull', 'collapse', 'crash', 'dump',\n    'arrested', 'investigation', 'lawsuit', 'sued', 'fine',\n    'resign', 'fired', 'dispute', 'split', 'shutdown',\n    'hack', 'exploit', 'breach', 'vulnerability'\n  ],\n  \n  // 弱八卦词（权重低）\n  weak: [\n    '争议', '质疑', '批评', '反对', '担忧',\n    'controversy', 'criticism', 'concern', 'doubt'\n  ]\n};\n\nfor (const item of items) {\n  const entry = item.json;\n  const title = entry.title || '';\n  const description = entry.contentSnippet || entry.description || '';\n  const content = entry.content || '';\n  const fullText = `${title} ${description} ${content}`.toLowerCase();\n  \n  // 检查是否包含八卦关键词\n  const strongMatches = gossipKeywords.strong.filter(kw => \n    fullText.includes(kw.toLowerCase())\n  );\n  const weakMatches = gossipKeywords.weak.filter(kw => \n    fullText.includes(kw.toLowerCase())\n  );\n  \n  // 如果没有任何八卦关键词，跳过\n  if (strongMatches.length === 0 && weakMatches.length === 0) continue;\n  \n  // 计算可信度评分\n  let credibility = 50; // 基础分\n  \n  // 来源权重加成\n  const sourceWeight = entry.sourceWeight || 80;\n  credibility += (sourceWeight - 80) * 0.3;\n  \n  // 强八卦词降低可信度（因为是传闻）\n  credibility -= strongMatches.length * 5;\n  \n  // 弱八卦词影响较小\n  credibility -= weakMatches.length * 2;\n  \n  // 有作者信息增加可信度\n  if (entry.creator || entry.author) credibility += 5;\n  \n  // 有发布时间增加可信度\n  if (entry.pubDate || entry.isoDate) credibility += 5;\n  \n  // 内容较长（有详细描述）增加可信度\n  if (content.length > 500) credibility += 10;\n  else if (content.length > 200) credibility += 5;\n  \n  // 限制在0-100\n  credibility = Math.max(30, Math.min(100, credibility));\n  \n  // 判断类别\n  let category = '未分类';\n  if (fullText.match(/(项目|project|protocol|token)/i)) category = '项目传闻';\n  else if (fullText.match(/(交易所|exchange|binance|coinbase)/i)) category = '交易所八卦';\n  else if (fullText.match(/(融资|investment|funding|raise)/i)) category = '融资消息';\n  else if (fullText.match(/(黑客|hack|exploit|breach)/i)) category = '安全事件';\n  else if (fullText.match(/(监管|regulation|sec|cftc)/i)) category = '监管动态';\n  \n  // 提取标签\n  const tags = ['RSS采集', entry.sourceName || '未知来源'];\n  if (strongMatches.length > 0) tags.push(strongMatches[0]);\n  if (category !== '未分类') tags.push(category);\n  \n  results.push({\n    json: {\n      title: title.substring(0, 200),\n      summary: description.substring(0, 300),\n      content: content || description,\n      url: entry.link || entry.url || '',\n      source: entry.sourceName || 'RSS',\n      sourceLang: entry.sourceLang || 'zh',\n      author: entry.creator || entry.author || entry.sourceName,\n      publishedAt: entry.isoDate || entry.pubDate || new Date().toISOString(),\n      credibilityScore: Math.floor(credibility),\n      category: category,\n      tags: tags,\n      gossipKeywords: [...strongMatches, ...weakMatches].slice(0, 5),\n      matchStrength: strongMatches.length > 0 ? 'strong' : 'weak'\n    }\n  });\n}\n\n// 按可信度排序（高可信度优先）\nresults.sort((a, b) => b.json.credibilityScore - a.json.credibilityScore);\n\n// 限制数量（每次最多处理20条）\nconst limited = results.slice(0, 20);\n\nconsole.log(`🔍 从 ${items.length} 条新闻中找到 ${results.length} 条八卦，处理前 ${limited.length} 条`);\n\nreturn limited;"
+      },
+      "id": "filter-gossip",
+      "name": "Filter & Score Gossip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 检查是否重复\nconst item = $input.item.json;\nconst url = item.url;\n\n// 简单的URL去重（基于URL）\n// 在实际应用中，这里应该查询 Directus 检查是否已存在\n\n// 为了避免重复，我们使用URL生成唯一slug\nconst urlHash = url.split('').reduce((a, b) => {\n  a = ((a << 5) - a) + b.charCodeAt(0);\n  return a & a;\n}, 0);\n\nconst slug = `rss-${Math.abs(urlHash)}-${Date.now().toString(36)}`;\n\nreturn {\n  json: {\n    ...item,\n    slug: slug,\n    uniqueCheck: `url:${url}` // 可用于Directus去重检查\n  }\n};"
+      },
+      "id": "check-duplicate",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL || 'http://host.docker.internal:8055' }}/items/news",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $json.title.replace(/\"/g, '\\\\\"') }}\",\n  \"summary\": \"{{ $json.summary.replace(/\"/g, '\\\\\"') }}\",\n  \"content\": \"{{ $json.content.substring(0, 5000).replace(/\"/g, '\\\\\"').replace(/\\n/g, '\\\\n') }}\",\n  \"ai_summary\": \"{{ $json.summary.substring(0, 200).replace(/\"/g, '\\\\\"') }}\",\n  \"source\": \"{{ $json.source }}\",\n  \"source_type\": \"rss\",\n  \"url\": \"{{ $json.url }}\",\n  \"slug\": \"{{ $json.slug }}\",\n  \"news_type\": \"gossip\",\n  \"credibility_score\": {{ $json.credibilityScore }},\n  \"verification_status\": \"unverified\",\n  \"gossip_tags\": {{ JSON.stringify($json.tags) }},\n  \"likes_count\": 0,\n  \"comments_count\": 0,\n  \"status\": \"{{ $json.credibilityScore >= 60 ? 'published' : 'draft' }}\",\n  \"category\": \"crypto-general\",\n  \"content_published_at\": \"{{ $json.publishedAt }}\",\n  \"published_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "publish-directus",
+      "name": "Publish to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 统计结果\nconst items = $input.all();\n\nconst successful = items.filter(i => \n  (i.json.id || i.json.data?.id) && !i.json.error\n);\n\nconst duplicates = items.filter(i => \n  i.json.error?.message?.includes('duplicate') || \n  i.json.errors?.[0]?.message?.includes('duplicate')\n);\n\nconst failed = items.filter(i => \n  i.json.error && !i.json.error?.message?.includes('duplicate')\n);\n\nconst summary = {\n  total: items.length,\n  successful: successful.length,\n  duplicates: duplicates.length,\n  failed: failed.length,\n  timestamp: new Date().toISOString(),\n  sources: [...new Set(items.map(i => i.json.source || 'unknown'))]\n};\n\nconsole.log('\\n📊 RSS 采集统计:');\nconsole.log(`   总计: ${summary.total} 条`);\nconsole.log(`   成功: ${summary.successful} 条`);\nconsole.log(`   重复: ${summary.duplicates} 条`);\nconsole.log(`   失败: ${summary.failed} 条`);\nconsole.log(`   来源: ${summary.sources.join(', ')}`);\nconsole.log(`   时间: ${summary.timestamp}\\n`);\n\nif (successful.length > 0) {\n  console.log('✅ 新增八卦:');\n  successful.slice(0, 5).forEach((item, i) => {\n    const data = item.json.data || item.json;\n    console.log(`   ${i + 1}. ${data.title?.substring(0, 50)}...`);\n  });\n}\n\nreturn [{ json: summary }];"
+      },
+      "id": "summary-stats",
+      "name": "Summary Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 每30分钟": {
+      "main": [
+        [
+          {
+            "node": "Generate RSS Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate RSS Sources": {
+      "main": [
+        [
+          {
+            "node": "RSS Read Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read Feed": {
+      "main": [
+        [
+          {
+            "node": "Filter & Score Gossip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Score Gossip": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        [
+          {
+            "node": "Publish to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Directus": {
+      "main": [
+        [
+          {
+            "node": "Summary Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "1"
+}

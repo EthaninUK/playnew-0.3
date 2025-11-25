@@ -24,19 +24,8 @@ const GUIDE_CONFIG = {
   // 允许的值: 'airdrop', 'yield', 'liquidity', 'tools', 'nft'
   category_l1: 'yield',
 
-  // 二级分类名称
-  category_l2: '你的分类名称',
 
-  // 难度等级 (1-5)
-  difficulty_level: 1,
-
-  // 风险等级 (1-5)
-  risk_level: 1,
-
-  // 年化收益率范围
-  apy_min: 0,
-  apy_max: 0,
-
+ 
   // 资金门槛（重要：使用正确的字段名！）
   threshold_capital: '100-1000 USD',        // 文本描述
   threshold_capital_min: 100,               // 最小资金（整数）
@@ -45,8 +34,8 @@ const GUIDE_CONFIG = {
   time_commitment: '每周 1-2 小时',         // 文本描述
   time_commitment_minutes: 90,              // 时间（分钟）
 
-  // 技术门槛（必须使用英文值！）
-  threshold_tech_level: 'beginner',         // beginner (初级) / intermediate (中级) / advanced (高级)
+  // 技术门槛（可选）
+  threshold_tech_level: '初级',             // 初级/中级/高级
 
   // ========================================
   // 正文内容（支持 Markdown 格式）

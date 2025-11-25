@@ -9,6 +9,7 @@ import { Web3Provider } from "@/lib/wagmi/providers";
 import { ProgressBar } from "@/components/shared/ProgressBar";
 import { Toaster } from "sonner";
 import { TawkToWidget } from "@/components/TawkToWidget";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 export const metadata: Metadata = {
   title: "PlayNew.ai - 探索 Web3 新玩法",
@@ -23,15 +24,17 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="antialiased">
-        <Web3Provider>
-          <ProgressBar />
-          <Header />
-          <Breadcrumbs />
-          <main>{children}</main>
-          <Footer />
-          <Toaster position="top-center" richColors />
-          <TawkToWidget />
-        </Web3Provider>
+        <LanguageProvider>
+          <Web3Provider>
+            <ProgressBar />
+            <Header />
+            <Breadcrumbs />
+            <main>{children}</main>
+            <Footer />
+            <Toaster position="top-center" richColors />
+            <TawkToWidget />
+          </Web3Provider>
+        </LanguageProvider>
       </body>
     </html>
   );

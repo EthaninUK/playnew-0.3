@@ -1,0 +1,206 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "viewAll": "查看全部",
+    "viewMore": "查看更多",
+    "backToList": "返回列表",
+    "search": "搜索",
+    "filter": "筛选",
+    "sort": "排序",
+    "cancel": "取消",
+    "confirm": "确认",
+    "submit": "提交",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "share": "分享",
+    "like": "点赞",
+    "bookmark": "收藏",
+    "copied": "已复制",
+    "error": "出错了",
+    "success": "成功",
+    "comingSoon": "即将推出"
+  },
+  "nav": {
+    "home": "首页",
+    "strategies": "玩法库",
+    "news": "快讯",
+    "gossip": "币圈八卦",
+    "arbitrage": "套利",
+    "pricing": "会员",
+    "profile": "个人中心",
+    "favorites": "我的收藏",
+    "settings": "设置",
+    "login": "登录",
+    "register": "注册",
+    "logout": "登出"
+  },
+  "hero": {
+    "badge": "PlayNew · 新玩意",
+    "title": "新玩意",
+    "subtitle": "你在币圈的唯一人脉！",
+    "description": "连接Web3玩家，共享最新玩法",
+    "subdescription": "从DeFi收益到空投机会，从协议研究到市场洞察",
+    "exploreStrategies": "探索玩法库",
+    "upgradeMembership": "升级会员",
+    "stats": {
+      "activeUsers": "活跃用户",
+      "featuredStrategies": "精选玩法",
+      "totalRevenue": "累计收益(¥)",
+      "monthlyGrowth": "月度增长"
+    }
+  },
+  "home": {
+    "strategiesCard": {
+      "title": "玩法库",
+      "badge": "玩法",
+      "description": "探索经过验证的 DeFi 策略、空投机会、流动性挖矿等多种盈利玩法",
+      "cta": "浏览全部玩法"
+    },
+    "newsCard": {
+      "title": "行业快讯",
+      "badge": "实时更新",
+      "description": "追踪最新的加密货币新闻、协议更新、市场动态和行业洞察",
+      "cta": "查看最新快讯"
+    },
+    "categories": {
+      "title": "热门分类",
+      "description": "选择你感兴趣的玩法类型",
+      "viewAll": "查看全部"
+    },
+    "featured": {
+      "title": "精选玩法",
+      "description": "团队精选的高质量策略",
+      "viewAll": "查看全部",
+      "expectedReturn": "预期收益",
+      "airdropPotential": "空投潜力",
+      "capitalThreshold": "资金门槛"
+    },
+    "latestNews": {
+      "title": "最新快讯",
+      "description": "实时追踪行业动态",
+      "viewAll": "查看全部",
+      "viewAllNews": "查看全部快讯"
+    },
+    "ctaSection": {
+      "badge": "加入我们的社区",
+      "title": "新玩意，你在币圈的唯一人脉！",
+      "description": "用户正在使用PlayNew，发现最新的Web3机会",
+      "explore": "立即探索玩法库",
+      "viewPlans": "查看会员方案"
+    }
+  },
+  "strategies": {
+    "title": "玩法库",
+    "description": "探索精选的加密货币投资策略，从稳健收益到高风险高回报",
+    "searchPlaceholder": "搜索策略...",
+    "filterByCategory": "按分类筛选",
+    "filterByRisk": "按风险筛选",
+    "allCategories": "全部分类",
+    "allRisks": "全部风险",
+    "featuredOnly": "仅显示精选",
+    "sortBy": "排序方式",
+    "sortOptions": {
+      "newest": "最新发布",
+      "mostViewed": "最多查看",
+      "highestReturn": "收益最高",
+      "lowestRisk": "风险最低"
+    },
+    "noResults": "未找到相关策略",
+    "riskLevels": {
+      "0": "未知",
+      "1": "极低",
+      "2": "低风险",
+      "3": "中风险",
+      "4": "中高",
+      "5": "高风险"
+    },
+    "details": {
+      "overview": "概述",
+      "howItWorks": "工作原理",
+      "requirements": "参与要求",
+      "risks": "风险提示",
+      "tutorial": "操作教程",
+      "relatedStrategies": "相关玩法",
+      "backToStrategies": "返回玩法库",
+      "expectedReturn": "预期收益",
+      "capitalRequired": "资金要求",
+      "riskLevel": "风险等级",
+      "timeCommitment": "时间投入",
+      "category": "分类",
+      "tags": "标签",
+      "lastUpdated": "最后更新",
+      "views": "浏览次数"
+    }
+  },
+  "news": {
+    "title": "行业快讯",
+    "description": "追踪最新的加密货币新闻、协议更新、市场动态和行业洞察",
+    "searchPlaceholder": "搜索快讯...",
+    "filterByCategory": "按分类筛选",
+    "allCategories": "全部分类",
+    "importantOnly": "仅显示重要",
+    "backToNews": "返回快讯列表",
+    "details": {
+      "publishedAt": "发布时间",
+      "source": "来源",
+      "viewOriginal": "查看原文",
+      "visitLink": "访问链接",
+      "relatedNews": "相关快讯"
+    }
+  },
+  "gossip": {
+    "title": "币圈八卦",
+    "description": "最新的加密货币社区动态、项目八卦和行业趣闻",
+    "searchPlaceholder": "搜索八卦...",
+    "filterByTag": "按标签筛选",
+    "allTags": "全部标签",
+    "hotOnly": "仅显示热门",
+    "backToGossip": "返回八卦列表"
+  },
+  "arbitrage": {
+    "title": "套利机会",
+    "description": "发现跨平台、跨链的套利机会",
+    "filterByType": "按类型筛选",
+    "allTypes": "全部类型",
+    "backToArbitrage": "返回套利列表"
+  },
+  "auth": {
+    "loginRequired": "查看详情需要登录",
+    "loginDescription": "请先登录或注册以查看完整内容",
+    "registerDescription": "注册后即可免费查看全站所有内容",
+    "freeAccess": "注册后即可免费查看全站所有内容",
+    "loginButton": "登录",
+    "registerButton": "注册新账号",
+    "orRegister": "或者注册新账号"
+  },
+  "footer": {
+    "tagline": "你在币圈的唯一人脉！探索最新 Web3 玩法，掌握 DeFi 收益策略，追踪实时资讯动态。",
+    "product": {
+      "title": "产品",
+      "strategies": "玩法库",
+      "news": "快讯中心",
+      "gossip": "币圈八卦",
+      "membership": "会员服务"
+    },
+    "resources": {
+      "title": "资源",
+      "guide": "使用指南",
+      "faq": "常见问题",
+      "risk": "风险提示"
+    },
+    "legal": {
+      "title": "法律",
+      "terms": "服务条款",
+      "privacy": "隐私政策",
+      "disclaimer": "免责声明"
+    },
+    "copyright": "PlayNew.ai. All rights reserved.",
+    "slogan": "探索 Web3 新玩法",
+    "riskWarning": "仅供学习参考，投资有风险"
+  },
+  "language": {
+    "zh": "马来西亚(中文)",
+    "en": "English"
+  }
+}

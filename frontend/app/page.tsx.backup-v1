@@ -1,0 +1,505 @@
+import { getStrategies, getCategories, getNews, getPlatformStats, getTotalStrategiesCount } from '@/lib/directus';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AnimatedParticles } from '@/components/shared/AnimatedParticles';
+import {
+  ArrowRight,
+  TrendingUp,
+  Shield,
+  Zap,
+  Newspaper,
+  Rocket,
+  Sparkles,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  Flame,
+  Users,
+  DollarSign,
+  Target,
+  Activity,
+  Crown,
+} from 'lucide-react';
+
+function getRiskBadge(level: number) {
+  const configs = [
+    { variant: 'outline' as const, label: '未知', color: 'text-gray-600' },
+    { variant: 'secondary' as const, label: '极低', color: 'text-green-600' },
+    { variant: 'secondary' as const, label: '低风险', color: 'text-green-600' },
+    { variant: 'default' as const, label: '中风险', color: 'text-yellow-600' },
+    { variant: 'destructive' as const, label: '中高', color: 'text-orange-600' },
+    { variant: 'destructive' as const, label: '高风险', color: 'text-red-600' },
+  ];
+  const config = configs[level] || configs[0];
+
+  return (
+    <Badge variant={config.variant} className="shrink-0">
+      {config.label}
+    </Badge>
+  );
+}
+
+function formatNumber(num: number): string {
+  if (num >= 10000) {
+    return `${(num / 10000).toFixed(1)}万`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
+  }
+  return num.toString();
+}
+
+// Enable ISR with 60 second revalidation for better performance
+export const revalidate = 60;
+
+// 启用静态生成优化
+export const dynamic = 'force-static';
+
+export default async function Home() {
+  // 优化：使用 Promise.allSettled 避免单个请求失败影响整个页面
+  const results = await Promise.allSettled([
+    getStrategies({ limit: 6, featured: true }), // 只获取精选策略
+    getCategories(),
+    getNews({ limit: 5 }),
+    getPlatformStats(),
+    getTotalStrategiesCount(),
+  ]);
+
+  // 解构结果，提供默认值
+  const strategiesResult = results[0].status === 'fulfilled'
+    ? results[0].value
+    : { strategies: [], total: 0, page: 1, totalPages: 1 };
+  const categories = results[1].status === 'fulfilled' ? results[1].value : [];
+  const news = results[2].status === 'fulfilled' ? results[2].value : [];
+  const stats = results[3].status === 'fulfilled'
+    ? results[3].value
+    : { totalUsers: 20864, totalStrategies: 138, totalNews: 50, totalCategories: 47, activeSubscriptions: 3129, totalRevenue: 935571, monthlyGrowth: 12.5 };
+  const totalStrategies = results[4].status === 'fulfilled' ? results[4].value : 138;
+
+  const strategies = strategiesResult.strategies;
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section - Gemini 3 风格动画背景 */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        {/* 动画粒子背景层 */}
+        <AnimatedParticles />
+
+        {/* 渐变叠加层 - 创造深度感 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-transparent to-pink-500/20" />
+
+        {/* 动态光晕效果 */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
+        <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000" />
+
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-28">
+          <div className="max-w-5xl mx-auto text-center text-white">
+            {/* 标签徽章 */}
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-6 border border-white/20 shadow-lg">
+              <Sparkles className="h-4 w-4 text-yellow-300" />
+              <span className="text-sm font-semibold">PlayNew · 新玩意</span>
+            </div>
+
+            {/* 核心 Slogan - 超大字体 */}
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-8 leading-tight tracking-tight">
+              新玩意
+              <br />
+              <span className="bg-gradient-to-r from-yellow-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+                你在币圈的唯一人脉！
+              </span>
+            </h1>
+
+            {/* 副标题 */}
+            <p className="text-lg md:text-xl mb-10 text-blue-100 leading-relaxed max-w-3xl mx-auto font-light">
+              连接Web3玩家，共享最新玩法
+              <br className="hidden md:block" />
+              从DeFi收益到空投机会，从协议研究到市场洞察
+            </p>
+
+            {/* CTA 按钮组 */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Button
+                asChild
+                size="lg"
+                className="bg-white text-purple-600 hover:bg-blue-50 shadow-2xl shadow-blue-500/20 font-bold text-lg px-8 h-14 group"
+              >
+                <Link href="/strategies" className="flex items-center gap-2">
+                  <Rocket className="h-5 w-5" />
+                  探索玩法库
+                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Button>
+              {/* 会员功能已暂停 */}
+              {/* <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 font-semibold text-lg px-8 h-14"
+              >
+                <Link href="/pricing" className="flex items-center gap-2">
+                  <Crown className="h-5 w-5" />
+                  升级会员
+                </Link>
+              </Button> */}
+            </div>
+
+            {/* 核心数据统计 - 4列 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className="flex items-center justify-center mb-3">
+                  <Users className="h-8 w-8 text-yellow-300" />
+                </div>
+                <div className="text-3xl md:text-4xl font-black mb-1">{formatNumber(stats.totalUsers)}+</div>
+                <div className="text-sm text-blue-200 font-medium">活跃用户</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className="flex items-center justify-center mb-3">
+                  <Target className="h-8 w-8 text-green-300" />
+                </div>
+                <div className="text-3xl md:text-4xl font-black mb-1">{totalStrategies}+</div>
+                <div className="text-sm text-blue-200 font-medium">精选玩法</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className="flex items-center justify-center mb-3">
+                  <DollarSign className="h-8 w-8 text-pink-300" />
+                </div>
+                <div className="text-3xl md:text-4xl font-black mb-1">{formatNumber(stats.totalRevenue)}</div>
+                <div className="text-sm text-blue-200 font-medium">累计收益(¥)</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/15 transition-all">
+                <div className="flex items-center justify-center mb-3">
+                  <Activity className="h-8 w-8 text-cyan-300" />
+                </div>
+                <div className="text-3xl md:text-4xl font-black mb-1 flex items-center justify-center gap-1">
+                  <TrendingUp className="h-6 w-6" />
+                  {stats.monthlyGrowth}%
+                </div>
+                <div className="text-sm text-blue-200 font-medium">月度增长</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 核心板块导航 */}
+      <div className="bg-background border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+            {/* 玩法库入口 */}
+            <Link href="/strategies">
+              <Card className="h-full border-2 hover:border-purple-500 transition-all duration-300 cursor-pointer group hover:shadow-2xl hover:shadow-purple-500/10">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl group-hover:scale-110 transition-transform">
+                      <Rocket className="h-8 w-8 text-white" />
+                    </div>
+                    <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                      {totalStrategies}+ 玩法
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-2xl mb-2 group-hover:text-purple-600 transition-colors">
+                    玩法库
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    探索经过验证的 DeFi 策略、空投机会、流动性挖矿等多种盈利玩法
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center text-sm text-purple-600 dark:text-purple-400 font-semibold group-hover:translate-x-2 transition-transform">
+                    浏览全部玩法
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* 快讯入口 */}
+            <Link href="/news">
+              <Card className="h-full border-2 hover:border-blue-500 transition-all duration-300 cursor-pointer group hover:shadow-2xl hover:shadow-blue-500/10">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl group-hover:scale-110 transition-transform">
+                      <Newspaper className="h-8 w-8 text-white" />
+                    </div>
+                    <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      实时更新
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-2xl mb-2 group-hover:text-blue-600 transition-colors">
+                    行业快讯
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    追踪最新的加密货币新闻、协议更新、市场动态和行业洞察
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center text-sm text-blue-600 dark:text-blue-400 font-semibold group-hover:translate-x-2 transition-transform">
+                    查看最新快讯
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 热门玩法分类 */}
+      <div className="bg-muted/30 py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-2">热门分类</h2>
+              <p className="text-muted-foreground">选择你感兴趣的玩法类型</p>
+            </div>
+            <Button asChild variant="ghost" className="hidden md:flex">
+              <Link href="/strategies" className="group">
+                查看全部
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {categories.slice(0, 8).map((category: any) => (
+              <Link key={category.id} href={`/strategies?category=${category.slug}`}>
+                <Card className="h-full hover:shadow-lg transition-all duration-300 hover:border-primary cursor-pointer group hover:-translate-y-1">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col items-center text-center gap-3">
+                      <div className="text-4xl group-hover:scale-110 transition-transform">
+                        {category.icon || '📊'}
+                      </div>
+                      <CardTitle className="text-base font-semibold group-hover:text-primary transition-colors">
+                        {category.name}
+                      </CardTitle>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 精选玩法 */}
+      <div className="bg-background py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-orange-400 to-pink-500 rounded-lg">
+                <Flame className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold">精选玩法</h2>
+                <p className="text-muted-foreground">团队精选的高质量策略</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" className="hidden md:flex">
+              <Link href="/strategies" className="group">
+                查看全部
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {strategies.map((strategy: any) => (
+              <Link key={strategy.id} href={`/strategies/${strategy.slug}`}>
+                <Card className="h-full hover:shadow-xl transition-all duration-300 hover:border-purple-500 cursor-pointer group hover:-translate-y-1">
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <CardTitle className="text-lg font-bold group-hover:text-purple-600 transition-colors line-clamp-2 flex-1">
+                        {strategy.title}
+                      </CardTitle>
+                      {getRiskBadge(strategy.risk_level)}
+                    </div>
+                    <CardDescription className="line-clamp-2 text-sm">
+                      {strategy.summary}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3">
+                    {/* 收益展示 */}
+                    <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                        <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground mb-0.5">预期收益</div>
+                        <div className="font-bold text-green-700 dark:text-green-400 text-sm">
+                          {strategy.apy_min === 0 && strategy.apy_max === 0
+                            ? '空投潜力'
+                            : `${strategy.apy_min}% - ${strategy.apy_max}%`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 门槛信息 */}
+                    <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                        <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-muted-foreground mb-0.5">资金门槛</div>
+                        <div className="font-bold text-blue-700 dark:text-blue-400 text-sm line-clamp-2">
+                          {strategy.threshold_capital}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* 移动端查看更多按钮 */}
+          <div className="mt-8 text-center md:hidden">
+            <Button asChild variant="outline" size="lg">
+              <Link href="/strategies">
+                查看全部玩法
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* 最新快讯 */}
+      <div className="bg-muted/30 py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg">
+                <Zap className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl md:text-4xl font-bold">最新快讯</h2>
+                <p className="text-muted-foreground">实时追踪行业动态</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" className="hidden md:flex">
+              <Link href="/news" className="group">
+                查看全部
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-4 max-w-4xl mx-auto">
+            {news.slice(0, 5).map((item: any, index: number) => (
+              <Link key={item.id} href={`/news/${item.id}`}>
+                <Card className="hover:shadow-lg transition-all duration-300 hover:border-blue-500 cursor-pointer group">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      {/* 序号标识 */}
+                      <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
+                        index === 0
+                          ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white'
+                          : index === 1
+                          ? 'bg-gradient-to-br from-gray-300 to-gray-400 text-white'
+                          : index === 2
+                          ? 'bg-gradient-to-br from-orange-300 to-orange-400 text-white'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {index + 1}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                          {item.title}
+                        </h3>
+
+                        {item.ai_summary && (
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                            {item.ai_summary}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          {item.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {item.category}
+                            </Badge>
+                          )}
+                          {item.source && (
+                            <span className="flex items-center gap-1">
+                              <ExternalLink className="h-3 w-3" />
+                              {item.source}
+                            </span>
+                          )}
+                          {item.content_published_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(item.content_published_at).toLocaleDateString('zh-CN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          {/* 移动端查看更多按钮 */}
+          <div className="mt-8 text-center md:hidden">
+            <Button asChild variant="outline" size="lg">
+              <Link href="/news">
+                查看全部快讯
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* 底部 CTA - 更新 Slogan */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 text-white">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full mb-6 border border-white/20">
+            <Sparkles className="h-4 w-4 text-yellow-300" />
+            <span className="text-sm font-semibold">加入我们的社区</span>
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-black mb-4">
+            新玩意，你在币圈的唯一人脉！
+          </h2>
+          <p className="text-xl text-purple-100 mb-10 max-w-2xl mx-auto">
+            {formatNumber(stats.totalUsers)}+ 用户正在使用PlayNew，发现最新的Web3机会
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              asChild
+              size="lg"
+              className="bg-white text-purple-600 hover:bg-blue-50 font-bold text-lg px-8 h-14 shadow-2xl"
+            >
+              <Link href="/strategies">
+                立即探索玩法库
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            {/* 会员功能已暂停 */}
+            {/* <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-2 border-white/30 bg-white/10 backdrop-blur-sm text-white hover:bg-white/20 font-semibold text-lg px-8 h-14"
+            >
+              <Link href="/pricing" className="flex items-center gap-2">
+                <Crown className="h-5 w-5" />
+                查看会员方案
+              </Link>
+            </Button> */}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

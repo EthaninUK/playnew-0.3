@@ -36,7 +36,7 @@ git commit -m "Initial commit: PlayNew 0.3"
 #### 1.3 推送代码到 GitHub
 
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/playnew-0.3.git
+git remote add origin git@github.com:EthaninUK/playnew-0.3.git
 git branch -M main
 git push -u origin main
 ```

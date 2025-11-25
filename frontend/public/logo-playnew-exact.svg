@@ -1,0 +1,31 @@
+<svg width="700" height="700" viewBox="0 0 700 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A78BFA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 左下角的圆点 -->
+  <circle cx="140" cy="630" r="45" fill="url(#logoGradient)"/>
+
+  <!-- 主体的 ">" 形状 -->
+  <!-- 上面的横条 -->
+  <path d="M 100 100 C 100 72 122 50 150 50 L 450 50 C 485 50 515 70 540 100 L 540 180 C 540 200 530 210 510 210 L 340 210 C 310 210 290 230 280 250 L 270 270"
+        fill="url(#logoGradient)"
+        stroke="none"/>
+
+  <!-- 中间的 S 形连接部分 -->
+  <path d="M 270 270 C 265 280 270 290 285 290 L 430 290 C 455 290 475 310 490 335 L 560 440 C 572 460 572 480 560 500 L 490 605 C 475 630 455 650 430 650 L 285 650 C 270 650 265 660 270 670 L 275 685"
+        fill="url(#logoGradient)"
+        stroke="none"/>
+
+  <!-- 下面的横条 -->
+  <path d="M 275 685 L 280 700 C 285 710 295 715 310 715 L 510 715 C 530 715 540 725 540 745 L 540 825 C 515 855 485 875 450 875 L 150 875 C 122 875 100 853 100 825 L 100 745 C 100 725 110 715 130 715 L 220 715"
+        fill="url(#logoGradient)"
+        stroke="none"/>
+
+  <!-- 右上角的小圆点 -->
+  <circle cx="615" cy="490" r="40" fill="url(#logoGradient)"/>
+</svg>

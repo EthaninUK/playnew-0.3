@@ -1,95 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createClient } from '@/lib/supabase/server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-09-30.clover',
+  apiVersion: '2024-11-20.acacia',
 });
 
-const DIRECTUS_URL = process.env.NEXT_PUBLIC_DIRECTUS_URL || 'http://localhost:8055';
+// 会员方案价格映射（年付）
+const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string; level: number }> = {
+  'pro': {
+    amount: 69900, // $699 in cents
+    name: 'Pro',
+    level: 1
+  },
+  'max': {
+    amount: 129900, // $1299 in cents
+    name: 'Max',
+    level: 2
+  }
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { membershipId, billingCycle, userId } = body;
+    const { membershipId } = await request.json();
 
-    if (!membershipId || !billingCycle || !userId) {
+    // 验证用户登录
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Missing required parameters' },
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // 验证会员方案
+    const priceInfo = MEMBERSHIP_PRICES[membershipId];
+    if (!priceInfo) {
+      return NextResponse.json(
+        { error: 'Invalid membership plan' },
         { status: 400 }
       );
     }
 
-    // 获取会员信息
-    const membershipResponse = await fetch(
-      `${DIRECTUS_URL}/items/memberships/${membershipId}`
-    );
-
-    if (!membershipResponse.ok) {
-      throw new Error('Failed to fetch membership');
-    }
-
-    const membershipData = await membershipResponse.json();
-    const membership = membershipData.data;
-
-    // 计算价格
-    const amount =
-      billingCycle === 'monthly'
-        ? membership.price_monthly_usd
-        : membership.price_yearly_usd;
-
     // 创建 Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${membership.name} 会员`,
-              description:
-                billingCycle === 'monthly'
-                  ? '月付订阅'
-                  : '年付订阅 (相当于10个月)',
-              metadata: {
-                membership_id: membershipId,
-                membership_name: membership.name,
-                membership_level: membership.level.toString(),
-              },
+              name: `PlayNew ${priceInfo.name} Membership`,
+              description: `${priceInfo.name} 会员 - 年度订阅`,
             },
-            unit_amount: Math.round(amount * 100), // Stripe 使用分作为单位
-            recurring:
-              billingCycle === 'monthly'
-                ? {
-                    interval: 'month',
-                    interval_count: 1,
-                  }
-                : {
-                    interval: 'year',
-                    interval_count: 1,
-                  },
+            unit_amount: priceInfo.amount,
           },
           quantity: 1,
         },
       ],
-      mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?plan=${membershipId}&cycle=${billingCycle}&cancelled=true`,
       metadata: {
-        userId,
-        membershipId,
-        billingCycle,
+        userId: user.id,
+        userEmail: user.email || '',
+        membershipId: membershipId,
+        membershipLevel: priceInfo.level.toString(),
+        membershipName: priceInfo.name,
       },
-      subscription_data: {
-        metadata: {
-          userId,
-          membershipId,
-          billingCycle,
-        },
-      },
-      customer_email: undefined, // TODO: 可以从 Supabase 获取用户邮箱
+      customer_email: user.email || undefined,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing?canceled=true`,
+      allow_promotion_codes: true,
     });
 
-    return NextResponse.json({ sessionId: session.id, url: session.url });
+    return NextResponse.json({ url: session.url });
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
     return NextResponse.json(

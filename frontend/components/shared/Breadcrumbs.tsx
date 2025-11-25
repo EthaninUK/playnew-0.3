@@ -32,7 +32,9 @@ export function Breadcrumbs() {
         pathname === '/' ||
         pathname.startsWith('/strategies') && !pathname.includes('/strategies/') ||
         pathname.startsWith('/news') && !pathname.includes('/news/') ||
-        pathname === '/providers'
+        pathname === '/providers' ||
+        pathname === '/arbitrage' ||
+        pathname === '/arbitrage/types'
       ) {
         setSegments([]);
         setLoading(false);
@@ -142,22 +144,14 @@ function generateBreadcrumbs(pathname: string): BreadcrumbSegment[] {
     });
 
     const slug = pathParts[1];
-    const staticTitle = formatSlugToTitle(slug);
 
-    // 如果有静态映射，使用静态标题；否则动态获取
-    if (staticTitle !== slug) {
-      segments.push({
-        label: staticTitle,
-        href: `/strategies/${slug}`,
-      });
-    } else {
-      segments.push({
-        label: '加载中...',
-        href: `/strategies/${slug}`,
-        dynamic: true,
-        fetchUrl: `/api/strategy-title/${slug}`,
-      });
-    }
+    // 动态获取策略标题
+    segments.push({
+      label: '加载中...',
+      href: `/strategies/${slug}`,
+      dynamic: true,
+      fetchUrl: `/api/strategy-title/${slug}`,
+    });
   }
 
   // 快讯详情页
@@ -168,9 +162,31 @@ function generateBreadcrumbs(pathname: string): BreadcrumbSegment[] {
       href: '/news',
     });
 
+    // 动态获取快讯标题
     segments.push({
-      label: '快讯详情',
+      label: '加载中...',
       href: `/news/${pathParts[1]}`,
+      dynamic: true,
+      fetchUrl: `/api/news-title/${pathParts[1]}`,
+    });
+  }
+
+  // 套利详情页
+  else if (pathParts[0] === 'arbitrage' && pathParts[1] === 'types' && pathParts[2]) {
+    // 先添加套利类型层级
+    segments.push({
+      label: '套利类型',
+      href: '/arbitrage/types',
+    });
+
+    const slug = pathParts[2];
+
+    // 动态获取套利类型标题
+    segments.push({
+      label: '加载中...',
+      href: `/arbitrage/types/${slug}`,
+      dynamic: true,
+      fetchUrl: `/api/arbitrage-title/${slug}`,
     });
   }
 
@@ -213,30 +229,4 @@ function generateBreadcrumbs(pathname: string): BreadcrumbSegment[] {
   }
 
   return segments;
-}
-
-// 将 slug 转换为标题
-function formatSlugToTitle(slug: string): string {
-  // 常见的策略名称映射
-  const titleMap: Record<string, string> = {
-    // 指南类
-    'airdrop-tasks-guide': '空投任务板块指南',
-    'points-season-guide': '积分赛季完全指南',
-    'testnet-guide': '测试网与早鸟参与完全指南',
-    'launchpad-guide': '启动板与代币配售完全指南',
-    'whitelist-guide': '白名单与预售参与完全指南',
-    'stablecoin-yield-guide': '稳定币理财完全指南',
-    'lending-yield-complete-guide': '借贷挖息完全指南',
-  };
-
-  // 如果在映射表中找到，直接返回
-  if (titleMap[slug]) {
-    return titleMap[slug];
-  }
-
-  // 否则将 slug 转换为标题格式
-  return slug
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 }

@@ -1,0 +1,171 @@
+{
+  "name": "Twitter Gossip Collector - 币圈八卦采集器 (修复版)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 定义要监控的KOL账号列表 (简化版，测试用5个)\nconst kols = [\n  { username: 'VitalikButerin', name: 'Vitalik Buterin', weight: 100 },\n  { username: 'WuBlockchain', name: '吴说区块链', weight: 95 },\n  { username: 'zachxbt', name: 'ZachXBT', weight: 95 },\n  { username: 'lookonchain', name: 'Lookonchain', weight: 90 },\n  { username: 'whale_alert', name: 'Whale Alert', weight: 85 },\n];\n\n// 八卦关键词\nconst gossipKeywords = [\n  'rumor', 'scam', 'rug', 'dump', 'hack', \n  '传闻', '爆料', '跑路', '暴雷'\n];\n\n// 为每个KOL创建搜索查询\nconst results = kols.map(kol => ({\n  json: {\n    kolUsername: kol.username,\n    kolName: kol.name,\n    kolWeight: kol.weight,\n    searchQuery: `from:${kol.username} (${gossipKeywords.slice(0, 5).join(' OR ')})`,\n    timestamp: new Date().toISOString()\n  }\n}));\n\nreturn results;"
+      },
+      "id": "generate-queries",
+      "name": "Generate Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "resource": "tweet",
+        "operation": "search",
+        "searchText": "={{ $json.searchQuery }}",
+        "returnAll": false,
+        "limit": 10,
+        "additionalFields": {}
+      },
+      "id": "twitter-search",
+      "name": "Twitter Search",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "PLACEHOLDER",
+          "name": "Twitter OAuth2 API account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 过滤和评分推文\nconst items = $input.all();\nconst results = [];\n\n// 八卦关键词(用于二次验证)\nconst gossipKeywords = ['rumor', 'scam', 'rug', 'dump', 'hack', '传闻', '爆料', '跑路'];\n\nfor (const item of items) {\n  const tweet = item.json;\n  const text = tweet.text || tweet.full_text || '';\n  \n  // 检查是否包含关键词\n  const hasKeyword = gossipKeywords.some(keyword => \n    text.toLowerCase().includes(keyword.toLowerCase())\n  );\n  \n  if (!hasKeyword) continue;\n  \n  // 计算互动量 (兼容不同的Twitter API响应格式)\n  const metrics = tweet.public_metrics || {};\n  const engagement = \n    (metrics.like_count || tweet.favorite_count || 0) + \n    (metrics.retweet_count || tweet.retweet_count || 0) + \n    (metrics.reply_count || tweet.reply_count || 0);\n  \n  // 过滤低互动推文 (测试时降低阈值)\n  if (engagement < 10) continue;\n  \n  // 初步可信度评分\n  let credibility = 50;\n  \n  // KOL权重加成\n  const kolWeight = tweet.kolWeight || 80;\n  credibility += (kolWeight - 80) * 0.2;\n  \n  // 互动量加成\n  if (engagement > 500) credibility += 10;\n  else if (engagement > 100) credibility += 5;\n  \n  // 包含\"据悉\"、\"allegedly\"等词汇降低可信度\n  if (text.match(/(据悉|allegedly|rumor)/i)) {\n    credibility -= 10;\n  }\n  \n  // 包含链接(证据)增加可信度\n  const hasUrls = (tweet.entities?.urls?.length || 0) > 0;\n  if (hasUrls) credibility += 10;\n  \n  // 限制在0-100\n  credibility = Math.max(0, Math.min(100, credibility));\n  \n  // 构建输出\n  results.push({\n    json: {\n      tweetId: tweet.id_str || tweet.id || Date.now().toString(),\n      author: tweet.user?.screen_name || tweet.author_username || 'unknown',\n      authorName: tweet.user?.name || tweet.author_name || 'Unknown',\n      text: text.substring(0, 500),\n      url: `https://twitter.com/${tweet.user?.screen_name || 'i'}/status/${tweet.id_str || tweet.id}`,\n      createdAt: tweet.created_at || new Date().toISOString(),\n      engagement: engagement,\n      likes: metrics.like_count || tweet.favorite_count || 0,\n      retweets: metrics.retweet_count || tweet.retweet_count || 0,\n      replies: metrics.reply_count || tweet.reply_count || 0,\n      credibilityScore: Math.floor(credibility),\n      kolWeight: kolWeight,\n      hasUrls: hasUrls\n    }\n  });\n}\n\n// 按互动量排序\nresults.sort((a, b) => b.json.engagement - a.json.engagement);\n\nconsole.log(`🔍 找到 ${results.length} 条符合条件的八卦`);\n\nreturn results;"
+      },
+      "id": "filter-score",
+      "name": "Filter & Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL || 'http://host.docker.internal:8055' }}/items/news",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $json.text.substring(0, 100).replace(/\"/g, '\\\\\"') }}\",\n  \"summary\": \"{{ $json.text.substring(0, 200).replace(/\"/g, '\\\\\"') }}\",\n  \"content\": \"# Twitter 爆料\\n\\n**来源**: [@{{ $json.author }}]({{ $json.url }})\\n**作者**: {{ $json.authorName }}\\n**时间**: {{ $json.createdAt }}\\n**热度**: {{ $json.engagement }} 互动\\n\\n## 原文\\n\\n{{ $json.text }}\",\n  \"ai_summary\": \"{{ $json.text.substring(0, 150).replace(/\"/g, '\\\\\"') }}\",\n  \"source\": \"Twitter @{{ $json.author }}\",\n  \"source_type\": \"twitter\",\n  \"url\": \"{{ $json.url }}\",\n  \"slug\": \"twitter-{{ $json.tweetId }}\",\n  \"news_type\": \"gossip\",\n  \"credibility_score\": {{ $json.credibilityScore }},\n  \"verification_status\": \"unverified\",\n  \"gossip_tags\": [\"Twitter八卦\", \"{{ $json.authorName }}\"],\n  \"likes_count\": {{ Math.floor($json.engagement * 0.3) }},\n  \"comments_count\": 0,\n  \"status\": \"{{ $json.credibilityScore >= 60 ? 'published' : 'draft' }}\",\n  \"category\": \"crypto-general\",\n  \"content_published_at\": \"{{ $json.createdAt }}\",\n  \"published_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "publish-directus",
+      "name": "Publish to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300],
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 统计结果\nconst items = $input.all();\n\nconst successful = items.filter(i => i.json.id || i.json.data?.id);\nconst failed = items.filter(i => i.json.error);\n\nconst summary = {\n  total: items.length,\n  successful: successful.length,\n  failed: failed.length,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('\\n📊 采集统计:');\nconsole.log(`   总计: ${summary.total} 条`);\nconsole.log(`   成功: ${summary.successful} 条`);\nconsole.log(`   失败: ${summary.failed} 条`);\nconsole.log(`   时间: ${summary.timestamp}\\n`);\n\nif (failed.length > 0) {\n  console.log('❌ 失败原因:');\n  failed.forEach((item, i) => {\n    console.log(`   ${i + 1}. ${item.json.error?.message || '未知错误'}`);\n  });\n}\n\nreturn [{ json: summary }];"
+      },
+      "id": "summary-stats",
+      "name": "Summary Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Queries": {
+      "main": [
+        [
+          {
+            "node": "Twitter Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter Search": {
+      "main": [
+        [
+          {
+            "node": "Filter & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Score": {
+      "main": [
+        [
+          {
+            "node": "Publish to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Directus": {
+      "main": [
+        [
+          {
+            "node": "Summary Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "1"
+}

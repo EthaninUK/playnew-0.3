@@ -6,21 +6,20 @@ export const metadata = {
   description: '实时追踪币圈最新资讯、项目动态和市场趋势 | 新鲜八卦热议话题',
 };
 
-// Revalidate every 5 minutes (300 seconds)
-export const revalidate = 300;
+// Revalidate every 2 minutes (120 seconds) - news updates frequently
+export const revalidate = 120;
 
 export default async function NewsPage() {
-  // Fetch both types of news and total count
-  const [realtimeNews, gossipNews, totalCount] = await Promise.all([
-    getNews({ limit: -1, newsType: 'realtime' }), // Fetch all news
-    getNews({ limit: 20, newsType: 'gossip' }),
+  // Fetch only realtime news with reasonable limit for initial load
+  // Client-side will handle pagination
+  const [realtimeNews, totalCount] = await Promise.all([
+    getNews({ limit: 50, newsType: 'realtime' }), // Fetch first 50 for initial page load
     getTotalNewsCount('realtime'),
   ]);
 
   return (
     <NewsPageClient
       initialNews={realtimeNews}
-      gossipNews={gossipNews}
       totalCount={totalCount}
     />
   );

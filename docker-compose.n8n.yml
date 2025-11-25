@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: playnew-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      # 基础配置
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Shanghai
+
+      # 允许使用环境变量
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+
+      # Directus 配置（从 .env 文件读取）
+      - DIRECTUS_URL=${DIRECTUS_URL:-http://host.docker.internal:8055}
+      - DIRECTUS_TOKEN=${DIRECTUS_ADMIN_TOKEN}
+
+      # Twitter API（从 .env 文件读取）
+      - TWITTER_BEARER_TOKEN=${TWITTER_BEARER_TOKEN}
+
+      # OpenAI API（从 .env 文件读取）
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+    volumes:
+      # 持久化 n8n 数据
+      - ./n8n-data:/home/node/.n8n
+
+      # 挂载工作流目录（可选，方便导入）
+      - ./n8n-workflows:/workflows:ro
+
+    # 允许 n8n 访问宿主机服务（Directus 等）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    networks:
+      - playnew-network
+
+networks:
+  playnew-network:
+    external: true

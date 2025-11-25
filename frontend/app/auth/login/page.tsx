@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { WalletConnectButton } from '@/components/shared/WalletConnectButton'
+import { Sparkles } from 'lucide-react'
 
 function LoginForm() {
   const router = useRouter()
@@ -107,17 +108,30 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-card rounded-xl shadow-lg p-8 border">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4">
+      {/* 动态背景网格 */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-2xl shadow-purple-500/20 p-8 border border-slate-200/50 dark:border-slate-800/50">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">欢迎回来</h1>
-            <p className="text-muted-foreground">登录到币圈玩法收集录</p>
+            {/* Logo */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl blur-lg opacity-40"></div>
+                <div className="relative p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                  <Sparkles className="h-8 w-8 text-white" />
+                </div>
+              </div>
+            </div>
+
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">欢迎回来</h1>
+            <p className="text-slate-600 dark:text-slate-400">登录到币圈玩法收集录</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <Label htmlFor="email">邮箱地址</Label>
+              <Label htmlFor="email" className="text-slate-700 dark:text-slate-300">邮箱地址</Label>
               <Input
                 id="email"
                 type="email"
@@ -126,11 +140,12 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                className="mt-1.5 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
             <div>
-              <Label htmlFor="password">密码</Label>
+              <Label htmlFor="password" className="text-slate-700 dark:text-slate-300">密码</Label>
               <Input
                 id="password"
                 type="password"
@@ -139,22 +154,27 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
+                className="mt-1.5 bg-white/50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-purple-500"
               />
             </div>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm p-3 rounded-xl">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 text-sm p-3 rounded-md">
+              <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm p-3 rounded-xl">
                 {message}
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all"
+              disabled={loading}
+            >
               {loading ? '登录中...' : '登录'}
             </Button>
           </form>
@@ -163,7 +183,7 @@ function LoginForm() {
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
               onClick={handleMagicLink}
               disabled={loading || !email}
             >
@@ -173,10 +193,10 @@ function LoginForm() {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-muted"></div>
+              <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-2 text-muted-foreground">或使用以下方式登录</span>
+              <span className="bg-white/80 dark:bg-slate-900/80 px-3 text-slate-500 dark:text-slate-400">或使用以下方式登录</span>
             </div>
           </div>
 
@@ -184,7 +204,7 @@ function LoginForm() {
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
               onClick={handleGoogleLogin}
               disabled={loading}
             >
@@ -200,7 +220,7 @@ function LoginForm() {
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
               onClick={handleTwitterLogin}
               disabled={loading}
             >
@@ -214,10 +234,10 @@ function LoginForm() {
           </div>
 
           <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">还没有账号? </span>
+            <span className="text-slate-600 dark:text-slate-400">还没有账号? </span>
             <Link
               href={`/auth/register${redirect !== '/' ? `?redirect=${redirect}` : ''}`}
-              className="text-primary hover:underline font-medium"
+              className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 hover:underline font-medium transition-colors"
             >
               注册
             </Link>

@@ -1,0 +1,358 @@
+{
+  "name": "Twitter Gossip Collector - 币圈八卦采集器",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger - 每15分钟",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "text": "={{ $json.searchQuery }}",
+        "returnAll": false,
+        "limit": 20,
+        "additionalFields": {
+          "includeEntities": true
+        }
+      },
+      "id": "twitter-search",
+      "name": "Twitter Search",
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "credentials": {
+        "twitterOAuth2Api": {
+          "id": "1",
+          "name": "Twitter OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 定义要监控的KOL账号列表\nconst kols = [\n  // 顶级KOL\n  { username: 'VitalikButerin', name: 'Vitalik Buterin', weight: 100 },\n  { username: 'cz_binance', name: 'CZ', weight: 100 },\n  { username: 'elonmusk', name: 'Elon Musk', weight: 95 },\n  { username: 'APompliano', name: 'Anthony Pompliano', weight: 90 },\n  \n  // 中文KOL\n  { username: 'WuBlockchain', name: '吴说', weight: 95 },\n  { username: 'cnLedger', name: 'Colin Wu', weight: 90 },\n  { username: 'mhballs', name: '潘志彪', weight: 85 },\n  { username: 'bitquant', name: 'George Cao', weight: 80 },\n  \n  // 链上侦探\n  { username: 'zachxbt', name: 'ZachXBT', weight: 95 },\n  { username: 'lookonchain', name: 'Lookonchain', weight: 90 },\n  { username: 'whale_alert', name: 'Whale Alert', weight: 85 },\n  { username: 'ArkhamIntel', name: 'Arkham', weight: 85 },\n  { username: 'peckshield', name: 'PeckShield', weight: 90 },\n  \n  // 媒体账号\n  { username: 'Cointelegraph', name: 'Cointelegraph', weight: 80 },\n  { username: 'CoinDesk', name: 'CoinDesk', weight: 80 },\n  { username: 'TheBlock__', name: 'The Block', weight: 80 },\n  { username: '8btc_official', name: '8BTC', weight: 75 },\n  \n  // 其他重要KOL\n  { username: 'haydenzadams', name: 'Hayden Adams', weight: 85 },\n  { username: 'stani', name: 'Stani Kulechov', weight: 85 },\n  { username: 'MessariCrypto', name: 'Messari', weight: 80 },\n  { username: 'thedefiedge', name: 'The DeFi Edge', weight: 75 },\n  { username: 'cobie', name: 'Cobie', weight: 85 },\n  { username: 'HsakaTrades', name: 'Hsaka', weight: 80 },\n];\n\n// 八卦关键词\nconst gossipKeywords = [\n  // 中文\n  '传闻', '爆料', '据悉', '消息人士', '内幕', '独家',\n  '跑路', '卷款', '崩盘', '离职', '内讧', '解散',\n  '被捕', '调查', '诉讼', '清仓', '抛售', '造假',\n  \n  // 英文\n  'rumor', 'allegedly', 'sources say', 'insider', 'exclusive',\n  'exit scam', 'rug pull', 'collapse', 'resign', 'fired',\n  'arrested', 'investigation', 'lawsuit', 'dump', 'fake'\n];\n\n// 为每个KOL创建搜索查询\nconst searchQueries = kols.map(kol => {\n  // 构建搜索查询: 来自该用户 + 包含关键词\n  const keywordQuery = gossipKeywords.slice(0, 10).join(' OR ');\n  return {\n    kolUsername: kol.username,\n    kolName: kol.name,\n    kolWeight: kol.weight,\n    searchQuery: `from:${kol.username} (${keywordQuery})`,\n    // Twitter API 限制\n    timestamp: new Date().toISOString()\n  };\n});\n\nreturn searchQueries.map(query => ({ json: query }));"
+      },
+      "id": "generate-kol-queries",
+      "name": "Generate KOL Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 过滤和评分推文\nconst items = $input.all();\nconst results = [];\n\n// 八卦关键词(用于二次验证)\nconst gossipKeywords = [\n  '传闻', '爆料', '据悉', '跑路', '卷款', '离职', '内讧',\n  'rumor', 'allegedly', 'scam', 'rug', 'exit', 'dump', 'arrested'\n];\n\nfor (const item of items) {\n  const tweet = item.json;\n  const text = tweet.text || '';\n  \n  // 1. 检查是否包含关键词\n  const hasKeyword = gossipKeywords.some(keyword => \n    text.toLowerCase().includes(keyword.toLowerCase())\n  );\n  \n  if (!hasKeyword) continue;\n  \n  // 2. 计算互动量\n  const engagement = \n    (tweet.public_metrics?.like_count || 0) + \n    (tweet.public_metrics?.retweet_count || 0) + \n    (tweet.public_metrics?.reply_count || 0);\n  \n  // 3. 过滤低互动推文\n  if (engagement < 50) continue;\n  \n  // 4. 初步可信度评分(基于规则)\n  let credibility = 50; // 基础分\n  \n  // 来源权重加成\n  const kolWeight = tweet.kolWeight || 80;\n  credibility += (kolWeight - 80) * 0.2;\n  \n  // 互动量加成\n  if (engagement > 500) credibility += 10;\n  else if (engagement > 200) credibility += 5;\n  \n  // 包含\"据悉\"、\"消息人士\"等词汇降低可信度\n  if (text.includes('据悉') || text.includes('allegedly') || text.includes('rumor')) {\n    credibility -= 10;\n  }\n  \n  // 包含链接(证据)增加可信度\n  if (tweet.entities?.urls?.length > 0) {\n    credibility += 10;\n  }\n  \n  // 限制在0-100\n  credibility = Math.max(0, Math.min(100, credibility));\n  \n  // 5. 构建输出\n  results.push({\n    json: {\n      tweetId: tweet.id,\n      author: tweet.author_username || tweet.kolUsername,\n      authorName: tweet.kolName || tweet.author_name,\n      text: text,\n      url: `https://twitter.com/${tweet.author_username}/status/${tweet.id}`,\n      createdAt: tweet.created_at,\n      engagement: engagement,\n      likes: tweet.public_metrics?.like_count || 0,\n      retweets: tweet.public_metrics?.retweet_count || 0,\n      replies: tweet.public_metrics?.reply_count || 0,\n      credibilityScore: Math.floor(credibility),\n      kolWeight: kolWeight,\n      needsAIAnalysis: credibility < 70, // 低于70分需要AI分析\n    }\n  });\n}\n\n// 按互动量排序\nresults.sort((a, b) => b.json.engagement - a.json.engagement);\n\nreturn results;"
+      },
+      "id": "filter-and-score",
+      "name": "Filter & Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needsAIAnalysis }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-needs-ai",
+      "name": "Needs AI Analysis?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "values": [
+            {
+              "content": "=你是加密货币行业的专业分析师。请分析以下Twitter八卦:\n\n作者: {{ $json.authorName }} (@{{ $json.author }})\n互动量: {{ $json.engagement }}\n内容: {{ $json.text }}\n\n请以JSON格式返回:\n{\n  \"credibility\": 0-100的整数,\n  \"summary\": \"中文总结(50字内)\",\n  \"category\": \"项目传闻/KOL动态/交易所八卦/团队内幕/融资消息/技术争议\",\n  \"tags\": [\"标签1\", \"标签2\", \"标签3\"],\n  \"verificationStatus\": \"unverified/verifying/confirmed/debunked\",\n  \"reasoning\": \"评分理由简述\"\n}\n\n评分标准:\n90-100: 有明确证据\n70-89: 可信来源\n50-69: 单一来源\n30-49: 证据不足\n0-29: 明显谣言"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        },
+        "responseFormat": "json"
+      },
+      "id": "openai-analysis",
+      "name": "OpenAI Analysis",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [1250, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "1",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 合并AI分析结果\nconst tweet = $('Check-Needs-AI').item.json;\nconst aiResponse = $json.message?.content || '{}';\n\nlet aiAnalysis;\ntry {\n  aiAnalysis = JSON.parse(aiResponse);\n} catch (e) {\n  aiAnalysis = {\n    credibility: tweet.credibilityScore,\n    summary: tweet.text.substring(0, 100),\n    category: '未分类',\n    tags: ['待审核'],\n    verificationStatus: 'unverified',\n    reasoning: 'AI分析失败'\n  };\n}\n\nreturn {\n  json: {\n    ...tweet,\n    credibilityScore: aiAnalysis.credibility,\n    aiSummary: aiAnalysis.summary,\n    category: aiAnalysis.category,\n    tags: aiAnalysis.tags,\n    verificationStatus: aiAnalysis.verificationStatus,\n    aiReasoning: aiAnalysis.reasoning,\n  }\n};"
+      },
+      "id": "merge-ai-results",
+      "name": "Merge AI Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll"
+      },
+      "id": "merge-branches",
+      "name": "Merge Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL }}/items/news",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.aiSummary || $json.text.substring(0, 100) }}"
+            },
+            {
+              "name": "summary",
+              "value": "={{ $json.aiSummary || $json.text.substring(0, 200) }}"
+            },
+            {
+              "name": "content",
+              "value": "=# Twitter爆料\\n\\n**来源**: [@{{ $json.author }}]({{ $json.url }})\\n**作者**: {{ $json.authorName }}\\n**时间**: {{ $json.createdAt }}\\n**热度**: {{ $json.engagement }} 互动 (👍{{ $json.likes }} | 🔁{{ $json.retweets }} | 💬{{ $json.replies }})\\n\\n## 原文\\n\\n{{ $json.text }}\\n\\n## AI分析\\n\\n{{ $json.aiReasoning || '待人工审核' }}"
+            },
+            {
+              "name": "ai_summary",
+              "value": "={{ $json.aiSummary }}"
+            },
+            {
+              "name": "source",
+              "value": "=Twitter @{{ $json.author }}"
+            },
+            {
+              "name": "source_type",
+              "value": "twitter"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "slug",
+              "value": "=twitter-{{ $json.tweetId }}"
+            },
+            {
+              "name": "news_type",
+              "value": "gossip"
+            },
+            {
+              "name": "credibility_score",
+              "value": "={{ $json.credibilityScore }}"
+            },
+            {
+              "name": "verification_status",
+              "value": "={{ $json.verificationStatus || 'unverified' }}"
+            },
+            {
+              "name": "gossip_tags",
+              "value": "={{ JSON.stringify($json.tags || [$json.category || '未分类']) }}"
+            },
+            {
+              "name": "likes_count",
+              "value": "={{ Math.floor($json.engagement * 0.3) }}"
+            },
+            {
+              "name": "comments_count",
+              "value": "=0"
+            },
+            {
+              "name": "status",
+              "value": "={{ $json.credibilityScore >= 60 ? 'published' : 'draft' }}"
+            },
+            {
+              "name": "category",
+              "value": "crypto-general"
+            },
+            {
+              "name": "content_published_at",
+              "value": "={{ $json.createdAt }}"
+            },
+            {
+              "name": "published_at",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-to-directus",
+      "name": "Publish to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1650, 400],
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 统计结果\nconst items = $input.all();\n\nconst summary = {\n  total: items.length,\n  published: items.filter(i => i.json.status === 'published').length,\n  draft: items.filter(i => i.json.status === 'draft').length,\n  highCredibility: items.filter(i => i.json.credibilityScore >= 80).length,\n  mediumCredibility: items.filter(i => i.json.credibilityScore >= 60 && i.json.credibilityScore < 80).length,\n  lowCredibility: items.filter(i => i.json.credibilityScore < 60).length,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('📊 采集统计:');\nconsole.log(`   总计: ${summary.total} 条`);\nconsole.log(`   已发布: ${summary.published} 条`);\nconsole.log(`   草稿: ${summary.draft} 条`);\nconsole.log(`   高可信度(80+): ${summary.highCredibility} 条`);\nconsole.log(`   中可信度(60-79): ${summary.mediumCredibility} 条`);\nconsole.log(`   低可信度(<60): ${summary.lowCredibility} 条`);\n\nreturn [{ json: summary }];"
+      },
+      "id": "summary-stats",
+      "name": "Summary Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1850, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 每15分钟": {
+      "main": [
+        [
+          {
+            "node": "Generate KOL Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate KOL Queries": {
+      "main": [
+        [
+          {
+            "node": "Twitter Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter Search": {
+      "main": [
+        [
+          {
+            "node": "Filter & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter & Score": {
+      "main": [
+        [
+          {
+            "node": "Needs AI Analysis?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs AI Analysis?": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "OpenAI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Merge AI Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge AI Results": {
+      "main": [
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Branches": {
+      "main": [
+        [
+          {
+            "node": "Publish to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Directus": {
+      "main": [
+        [
+          {
+            "node": "Summary Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2025-11-06T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,122 @@
+{
+  "name": "Telegram 八卦采集器 - 完全免费",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "channel_post",
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "webhookId": "telegram-gossip-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "PLACEHOLDER",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 解析 Telegram 消息\nconst message = $input.first().json.message || $input.first().json.channel_post;\n\nif (!message || !message.text) {\n  return [];\n}\n\nconst text = message.text;\nconst chat = message.chat;\nconst from = message.from || {};\n\n// 八卦关键词检测\nconst gossipKeywords = [\n  // 中文\n  '传闻', '爆料', '据悉', '消息', '内幕',\n  '跑路', '卷款', '暴雷', '崩盘',\n  '被捕', '调查', '诉讼',\n  '黑客', '攻击', '被盗',\n  \n  // 英文\n  'rumor', 'scam', 'rug', 'hack', 'exploit',\n  'dump', 'crash', 'arrested'\n];\n\nconst hasKeyword = gossipKeywords.some(kw => \n  text.toLowerCase().includes(kw.toLowerCase())\n);\n\nif (!hasKeyword) {\n  return [];\n}\n\n// 计算可信度\nlet credibility = 60; // Telegram 基础可信度\n\n// 频道类型判断\nconst isChannel = chat.type === 'channel';\nif (isChannel) credibility += 10; // 频道比群组可信度高\n\n// 消息长度\nif (text.length > 500) credibility += 10;\nelse if (text.length < 50) credibility -= 10;\n\n// 包含链接\nif (message.entities?.some(e => e.type === 'url' || e.type === 'text_link')) {\n  credibility += 10;\n}\n\n// 包含图片\nif (message.photo || message.video) {\n  credibility += 5;\n}\n\n// 限制范围\ncredibility = Math.max(30, Math.min(100, credibility));\n\nreturn [{\n  json: {\n    messageId: message.message_id,\n    text: text,\n    chatId: chat.id,\n    chatTitle: chat.title || chat.username || 'Private',\n    chatType: chat.type,\n    author: from.username || from.first_name || 'Anonymous',\n    authorId: from.id,\n    timestamp: new Date(message.date * 1000).toISOString(),\n    hasPhoto: !!message.photo,\n    hasVideo: !!message.video,\n    hasLinks: message.entities?.some(e => e.type === 'url' || e.type === 'text_link') || false,\n    credibilityScore: Math.floor(credibility),\n    forwardFrom: message.forward_from?.username || null,\n    replyTo: message.reply_to_message?.message_id || null\n  }\n}];"
+      },
+      "id": "parse-message",
+      "name": "Parse & Filter Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIRECTUS_URL || 'http://host.docker.internal:8055' }}/items/news",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.DIRECTUS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"{{ $json.text.substring(0, 100).replace(/\"/g, '\\\\\"') }}\",\n  \"summary\": \"{{ $json.text.substring(0, 200).replace(/\"/g, '\\\\\"') }}\",\n  \"content\": \"# Telegram 八卦\\n\\n**来源**: {{ $json.chatTitle }}\\n**作者**: @{{ $json.author }}\\n**时间**: {{ $json.timestamp }}\\n{{ $json.hasPhoto ? '\\n📷 包含图片' : '' }}{{ $json.hasVideo ? '\\n🎬 包含视频' : '' }}{{ $json.hasLinks ? '\\n🔗 包含链接' : '' }}\\n\\n## 原文\\n\\n{{ $json.text.replace(/\\n/g, '\\\\n') }}\",\n  \"ai_summary\": \"{{ $json.text.substring(0, 150).replace(/\"/g, '\\\\\"') }}\",\n  \"source\": \"Telegram {{ $json.chatTitle }}\",\n  \"source_type\": \"telegram\",\n  \"url\": \"https://t.me/{{ $json.chatTitle }}/{{ $json.messageId }}\",\n  \"slug\": \"tg-{{ $json.chatId }}-{{ $json.messageId }}\",\n  \"news_type\": \"gossip\",\n  \"credibility_score\": {{ $json.credibilityScore }},\n  \"verification_status\": \"unverified\",\n  \"gossip_tags\": [\"Telegram\", \"{{ $json.chatTitle }}\", \"实时爆料\"],\n  \"likes_count\": 0,\n  \"comments_count\": 0,\n  \"status\": \"{{ $json.credibilityScore >= 60 ? 'published' : 'draft' }}\",\n  \"category\": \"crypto-general\",\n  \"content_published_at\": \"{{ $json.timestamp }}\",\n  \"published_at\": \"{{ new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "id": "publish-directus",
+      "name": "Publish to Directus",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 300],
+      "continueOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nif (item.id || item.data?.id) {\n  console.log(`✅ 发布成功: ${item.data?.title || item.title || '未知标题'}`);\n  return [{ json: { status: 'success', ...item } }];\n} else if (item.error?.message?.includes('duplicate')) {\n  console.log(`⚠️  重复消息: ${item.error.message}`);\n  return [{ json: { status: 'duplicate', ...item } }];\n} else if (item.error) {\n  console.log(`❌ 发布失败: ${item.error.message}`);\n  return [{ json: { status: 'failed', ...item } }];\n}\n\nreturn [{ json: { status: 'unknown', ...item } }];"
+      },
+      "id": "log-result",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse & Filter Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Filter Message": {
+      "main": [
+        [
+          {
+            "node": "Publish to Directus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Directus": {
+      "main": [
+        [
+          {
+            "node": "Log Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-06T00:00:00.000Z",
+  "versionId": "1"
+}

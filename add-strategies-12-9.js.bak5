@@ -1,0 +1,534 @@
+const axios = require('axios');
+
+const DIRECTUS_URL = 'http://localhost:8055';
+
+// ===== 12.9 Orderly Network 做市聚合 =====
+const STRATEGY_12_9 = {
+  title: 'Orderly Network 做市聚合 - 全链流动性共享',
+  slug: 'orderbook-12-9-orderly-network-unified-liquidity',
+  summary: '参与 Orderly Network 的全链流动性层做市,一次做市服务多个 DApp(WOO X, Ref Finance 等),享受流动性共享和聚合收益,年化 20-60% APY,NEAR 生态基础设施。',
+
+  category: 'orderbook',
+  category_l1: 'liquidity',
+  category_l2: '订单簿做市',
+
+  difficulty_level: 4,
+  risk_level: 3,
+
+  apy_min: 20,
+  apy_max: 60,
+  threshold_capital: '10000 美元起',
+  threshold_capital_min: 10000,
+  time_commitment: '初始设置 3 小时,每日监控 1 小时',
+  time_commitment_minutes: 210,
+  threshold_tech_level: 'advanced',
+
+  content: `> **适合人群**: 专业做市者,NEAR 生态用户
+> **阅读时间**: 约 12 分钟
+> **关键词**: Orderly Network / 全链流动性 / 做市聚合 / NEAR
+
+---
+
+## 🎯 什么是 Orderly Network?
+
+### 核心概念
+
+**全链流动性基础设施**:
+- 去中心化订单簿引擎
+- 为多个 DApp 提供流动性
+- 做市商一次部署,服务全网
+
+**工作原理**:
+\`\`\`
+做市商 → Orderly Network → 多个 DEX
+                ↓
+        统一订单簿 + 撮合
+                ↓
+        WOO X, Ref Finance, etc.
+\`\`\`
+
+**关键优势**: 流动性共享,收益聚合
+
+---
+
+## 📋 Orderly 做市指南
+
+### 准备工作
+
+**资格要求**:
+- 做市商注册(需申请)
+- 最低资金 $10,000
+- 技术能力(API 开发)
+
+**申请流程**:
+\`\`\`
+1. 访问 orderly.network
+2. 填写做市商申请表
+3. 提交:
+   - 资金证明
+   - 做市策略简述
+   - 过往做市经验(可选)
+4. 等待审核(5-10 个工作日)
+5. 获批后获得 API 密钥
+\`\`\`
+
+### 做市流程
+
+**步骤 1: 连接 Orderly**
+
+**初始化 SDK**:
+
+\`\`\`typescript
+import { OrderlySDK } from '@orderly.network/sdk';
+
+// 初始化
+const orderly = new OrderlySDK({
+  apiKey: 'YOUR_API_KEY',
+  secretKey: 'YOUR_SECRET',
+  accountId: 'YOUR_ACCOUNT_ID',
+  network: 'mainnet',  // 或 'testnet'
+});
+
+await orderly.connect();
+console.log('Orderly 连接成功');
+\`\`\`
+
+**步骤 2: 存入资金**
+
+**跨链存入**:
+\`\`\`typescript
+// 支持多链
+// - NEAR
+// - Ethereum
+// - Arbitrum
+// - Polygon
+
+// 存入 USDC
+await orderly.deposit({
+  token: 'USDC',
+  amount: '10000',
+  chain: 'NEAR',  // 选择链
+});
+
+console.log('存入成功,等待确认...');
+\`\`\`
+
+**步骤 3: 开发做市策略**
+
+**简单双边做市**:
+
+\`\`\`typescript
+// 获取市场价格
+async function getMarketPrice(symbol: string) {
+  const ticker = await orderly.getTicker(symbol);
+  return {
+    bid: parseFloat(ticker.bid),
+    ask: parseFloat(ticker.ask),
+    mid: (parseFloat(ticker.bid) + parseFloat(ticker.ask)) / 2,
+  };
+}
+
+// 挂单做市
+async function placeMarketMakingOrders(
+  symbol: string,
+  spread: number,
+  size: number
+) {
+  // 获取价格
+  const price = await getMarketPrice(symbol);
+
+  // 取消旧订单
+  await orderly.cancelAllOrders(symbol);
+
+  // 计算买卖价
+  const bidPrice = price.mid * (1 - spread);
+  const askPrice = price.mid * (1 + spread);
+
+  // 挂买单
+  await orderly.placeOrder({
+    symbol,
+    side: 'BUY',
+    type: 'LIMIT',
+    price: bidPrice.toFixed(2),
+    quantity: size.toString(),
+    timeInForce: 'POST_ONLY',  // 确保 Maker
+  });
+
+  // 挂卖单
+  await orderly.placeOrder({
+    symbol,
+    side: 'SELL',
+    type: 'LIMIT',
+    price: askPrice.toFixed(2),
+    quantity: size.toString(),
+    timeInForce: 'POST_ONLY',
+  });
+
+  console.log(`[${symbol}] Buy ${bidPrice} | Sell ${askPrice}`);
+}
+
+// 主循环
+async function runMarketMaker() {
+  const symbols = ['PERP_BTC_USDC', 'PERP_ETH_USDC', 'PERP_NEAR_USDC'];
+  const spread = 0.0005;  // 0.05%
+  const size = 0.1;  // 每单大小
+
+  while (true) {
+    for (const symbol of symbols) {
+      try {
+        await placeMarketMakingOrders(symbol, spread, size);
+      } catch (error) {
+        console.error(`[${symbol}] 错误:`, error);
+      }
+    }
+
+    // 等待 5 秒
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+}
+
+runMarketMaker();
+\`\`\`
+
+**步骤 4: 库存管理**
+
+**防止单向累积**:
+
+\`\`\`typescript
+// 检查持仓
+async function checkInventory(symbol: string) {
+  const position = await orderly.getPosition(symbol);
+  const size = parseFloat(position.size);
+
+  return {
+    size,
+    side: size > 0 ? 'LONG' : 'SHORT',
+    value: Math.abs(size),
+  };
+}
+
+// 根据库存调整做市
+async function adjustedMarketMake(
+  symbol: string,
+  baseSpread: number,
+  baseSize: number
+) {
+  const inventory = await checkInventory(symbol);
+
+  // 如果多头过多,增加卖单减少买单
+  let buySize = baseSize;
+  let sellSize = baseSize;
+
+  if (inventory.side === 'LONG' && inventory.value > 0.5) {
+    buySize *= 0.5;  // 减少买单
+    sellSize *= 1.5;  // 增加卖单
+    console.log(`[${symbol}] 多头过多,调整订单大小`);
+  } else if (inventory.side === 'SHORT' && inventory.value > 0.5) {
+    buySize *= 1.5;
+    sellSize *= 0.5;
+    console.log(`[${symbol}] 空头过多,调整订单大小`);
+  }
+
+  // 挂单
+  await placeMarketMakingOrders(symbol, baseSpread, buySize);
+}
+\`\`\`
+
+---
+
+## 💰 收益案例
+
+### 案例 1: 单一做市商
+
+**投资**: $20,000
+
+**策略**:
+- 做市 BTC, ETH, NEAR 三个币种
+- 价差 0.05%
+- 日成交 $500,000
+
+**收益**:
+\`\`\`
+日 Maker 返佣 = $500K × 0.002% = $10
+日价差利润 = $500K/2 × 0.05% = $125
+日总计 = $135
+
+年化 = $135 × 365 / $20K = 246%
+\`\`\`
+
+**额外奖励**(ORDER 代币):
+- 做市挖矿赚 ORDER
+- 估计额外 +20-30% APY
+
+---
+
+### 案例 2: 聚合收益
+
+**Orderly 的优势**: 一次做市,服务多个平台
+
+**流动性分配**:
+- WOO X: 40% 交易量
+- Ref Finance: 30%
+- 其他 DApp: 30%
+
+**总收益**: 比单独在一个平台高 50-100%
+
+---
+
+## 🔥 高级策略
+
+### 策略 1: 跨链套利
+
+**利用 Orderly 的跨链支持**:
+1. 监控不同链的价格
+2. 发现价差时套利
+3. 通过 Orderly 统一订单簿执行
+
+**示例**:
+\`\`\`typescript
+// 监控跨链价差
+async function monitorCrossChainArbitrage() {
+  const nearPrice = await orderly.getTicker('PERP_BTC_USDC', 'NEAR');
+  const ethPrice = await orderly.getTicker('PERP_BTC_USDC', 'ETH');
+
+  const priceDiff = Math.abs(nearPrice.mid - ethPrice.mid);
+  const threshold = 0.001;  // 0.1% 价差阈值
+
+  if (priceDiff / nearPrice.mid > threshold) {
+    console.log('发现套利机会!');
+    // 执行套利逻辑
+  }
+}
+\`\`\`
+
+### 策略 2: 动态费率优化
+
+**根据市场条件调整**:
+- 高波动: 加宽价差,降低风险
+- 低波动: 缩小价差,提高成交率
+
+**实现**:
+\`\`\`typescript
+function calculateOptimalSpread(volatility: number) {
+  const baseSpread = 0.0005;  // 基础 0.05%
+
+  if (volatility > 0.8) {
+    return baseSpread * 2;  // 高波动加倍
+  } else if (volatility < 0.3) {
+    return baseSpread * 0.5;  // 低波动减半
+  }
+
+  return baseSpread;
+}
+\`\`\`
+
+### 策略 3: ORDER 代币策略
+
+**最大化代币奖励**:
+1. 优先做市激励最高的交易对
+2. Stake ORDER 获得额外收益
+3. 参与治理获得返佣提升
+
+---
+
+## ⚠️ 风险提示
+
+### 主要风险
+
+**1. 平台风险**:
+- Orderly 是相对新的项目(2022 年)
+- 技术可能存在未知漏洞
+
+**2. 流动性分散风险**:
+- 虽然聚合多个平台
+- 但单个平台流动性可能仍然不足
+
+**3. 跨链风险**:
+- 跨链桥可能失败或延迟
+- 资产卡在中间状态
+
+**4. 代币风险**:
+- ORDER 代币价格波动
+- 奖励实际价值不确定
+
+### 风险缓解
+
+**分散投资**:
+- 不超过总资金 20% 在 Orderly
+
+**定期提款**:
+- 每周提款一次
+- 避免长期锁仓
+
+**监控网络**:
+- 关注 NEAR 和 Orderly 的网络状态
+- 异常时暂停做市
+
+---
+
+## 📊 Orderly vs 其他平台
+
+| 平台 | 流动性模式 | 支持链 | APY | 特点 |
+|------|-----------|--------|-----|------|
+| dYdX | 单一订单簿 | StarkEx | 15-40% | 高流动性 |
+| Hyperliquid | 单一订单簿 | 自有 L1 | 25-60% | 高性能 |
+| **Orderly** | **聚合订单簿** | **多链** | **20-60%** | **流动性共享** |
+
+**Orderly 优势**: 一次做市服务多平台,收益聚合
+
+---
+
+## ❓ 常见问题
+
+**Q1: Orderly 和传统 DEX 有什么不同?**
+> Orderly 不是 DEX,是为 DEX 提供流动性的基础设施。类似于 Uniswap 的流动性路由。
+
+**Q2: 为什么需要申请才能做市?**
+> Orderly 希望确保做市商有足够经验和资金,维护网络质量。
+
+**Q3: 跨链提款需要多久?**
+> 一般 10-30 分钟,取决于源链和目标链的确认速度。
+
+**Q4: ORDER 代币有什么用?**
+> 治理投票、Stake 获得费用分成、做市奖励。
+
+**Q5: 适合新手吗?**
+> 不太适合。需要有做市经验和编程能力。建议先在其他平台练习。
+
+---
+
+## 🎓 总结
+
+Orderly Network 是创新的全链流动性方案:
+
+**核心优势**:
+1. **流动性聚合**: 一次做市服务多平台
+2. **跨链支持**: NEAR, Ethereum, Arbitrum 等
+3. **基础设施**: 做 Web3 的"纳斯达克"
+
+**适合人群**:
+- 专业做市商
+- 有 API 开发经验
+- 看好 NEAR 生态
+
+**不适合**:
+- 新手交易者
+- 小资金(< $10K)
+- 不熟悉跨链操作
+
+**推荐**: 经验丰富的做市商可作为重要策略,享受聚合收益,年化 20-60%。
+
+**展望**: Orderly 有望成为去中心化流动性的重要基础设施,早期参与者可能获得可观的代币奖励和治理权力。
+
+Orderly 做市,聚合流动性的未来!🌐
+
+---
+
+## 🚀 额外资源
+
+**官方资源**:
+- 官网: https://orderly.network
+- 文档: https://docs.orderly.network
+- Discord: https://discord.gg/orderlynetwork
+
+**做市商专区**:
+- 做市商申请: https://orderly.network/market-maker
+- API 文档: https://docs-api.orderly.network
+- SDK: https://github.com/OrderlyNetwork/sdk
+
+**监控工具**:
+- Orderly Explorer: https://explorer.orderly.network
+- 流动性仪表盘: https://stats.orderly.network
+
+**社区**:
+- Twitter: @OrderlyNetwork
+- Telegram 做市商群(获批后加入)
+
+---
+
+## 📈 实战建议
+
+**第一阶段**(1-2 周):
+- 在测试网熟悉 SDK
+- 回测历史数据
+- 优化参数
+
+**第二阶段**(第 3-4 周):
+- 小资金($5K)实盘
+- 验证策略有效性
+- 监控收益和风险
+
+**第三阶段**(第 2 个月起):
+- 增加资金到 $10K-$50K
+- 扩展到多个交易对
+- 参与社区治理
+
+**长期**(3 个月+):
+- 持续优化策略
+- 参与 ORDER 代币经济
+- 考虑成为核心做市商(更高返佣)
+
+祝你在 Orderly Network 做市成功!🎯
+`,
+
+  steps: [
+    { step_number: 1, title: '申请做市商资格', description: '访问 orderly.network 填写申请表并提交资料。', estimated_time: '1-2 周' },
+    { step_number: 2, title: '获取 API 密钥', description: '审核通过后获得 API 密钥和 SDK 访问权限。', estimated_time: '1 小时' },
+    { step_number: 3, title: '存入资金', description: '选择链(NEAR/Arbitrum/Polygon)存入 USDC。', estimated_time: '1 小时' },
+    { step_number: 4, title: '开发做市策略', description: '使用 Orderly SDK 编写自动做市脚本。', estimated_time: '2-3 天' },
+    { step_number: 5, title: '测试网验证', description: '在测试网运行策略,验证逻辑正确性。', estimated_time: '1 周' },
+    { step_number: 6, title: '实盘运行', description: '部署到 VPS,实盘运行并监控。', estimated_time: '每日 1 小时' },
+    { step_number: 7, title: '优化与扩展', description: '根据数据优化参数,扩展交易对。', estimated_time: '每周 2 小时' },
+  ],
+};
+
+// ===== 上传逻辑 =====
+async function getAuthToken() {
+  const response = await axios.post(`${DIRECTUS_URL}/auth/login`, {
+    email: 'the_uk1@outlook.com',
+    password: 'Mygcdjmyxzg2026!',
+  });
+  return response.data.data.access_token;
+}
+
+async function addStrategies() {
+  try {
+    const token = await getAuthToken();
+    const strategies = [STRATEGY_12_9];
+
+    console.log('\n开始创建 12.9 策略...\n');
+
+    for (let i = 0; i < strategies.length; i++) {
+      const strategy = {
+        ...strategies[i],
+        status: 'published',
+        is_featured: true,
+        view_count: 0,
+        bookmark_count: 0,
+        published_at: new Date().toISOString(),
+      };
+
+      const response = await axios.post(
+        `${DIRECTUS_URL}/items/strategies`,
+        strategy,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log(`✅ [${i + 1}/1] \${strategy:title}`);
+      console.log(`   ID: \${response:data.data.id}`);
+      console.log(`   Slug: \${response:data.data.slug}\n`);
+    }
+
+    console.log('🎉 创建完成！');
+    console.log('访问: http://localhost:3000/strategies?category=orderbook\n');
+  } catch (error) {
+    console.error('\n❌ 创建失败:', error.response?.data || error.message);
+  }
+}
+
+addStrategies();

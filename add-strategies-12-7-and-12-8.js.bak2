@@ -1,0 +1,705 @@
+const axios = require('axios');
+
+const DIRECTUS_URL = 'http://localhost:8055';
+
+// ===== 12.7 Drift Protocol Solana 做市 =====
+const STRATEGY_12_7 = {
+  title: 'Drift Protocol Solana 做市 - 高性能链上永续做市',
+  slug: 'orderbook-12-7-drift-protocol-solana-market-making',
+  summary: '在 Drift Protocol(Solana 生态)做链上永续合约市,享受极低 Gas 费(<$0.001)、亚秒级确认和 JIT 流动性机制,年化 20-70% APY,Solana 高性能链的做市优选。',
+
+  category: 'orderbook',
+  category_l1: 'derivatives',
+  category_l2: '订单簿做市',
+
+  difficulty_level: 3,
+  risk_level: 3,
+
+  apy_min: 20,
+  apy_max: 70,
+  threshold_capital: '3000 美元起',
+  threshold_capital_min: 3000,
+  time_commitment: '初始设置 2 小时,每日监控 1 小时',
+  time_commitment_minutes: 150,
+  threshold_tech_level: 'intermediate',
+
+  content: `> **适合人群**: Solana 生态用户,链上做市者
+> **阅读时间**: 约 8 分钟
+> **关键词**: Drift Protocol / Solana / 永续合约 / JIT 流动性
+
+---
+
+## 🎯 什么是 Drift Protocol?
+
+### 核心特性
+
+**Solana 原生永续合约**:
+- 订单簿 + AMM 混合模式
+- 亚秒级交易确认(400ms)
+- Gas 费 < $0.001
+- 支持 50+ 交易对
+
+**JIT(Just-In-Time)流动性**:
+- 做市商可提供即时流动性
+- 捕捉大单交易
+- 赚取额外费用
+
+---
+
+## 📋 Drift 做市指南
+
+### 准备工作
+
+**资产要求**:
+- 准备 USDC(Solana 链)
+- 最低 $3,000 起
+- 建议 $10,000+ 以提高资金效率
+
+**钱包准备**:
+- Phantom 或 Solflare 钱包
+- 预存少量 SOL(支付 Gas)
+
+### 操作流程
+
+**步骤 1: 连接 Drift**
+
+1. 访问 app.drift.trade
+2. 连接 Phantom 钱包
+3. 存入 USDC 作为保证金
+
+**步骤 2: 手动做市**(适合小资金)
+
+**在 Drift 界面挂单**:
+1. 选择交易对(如 SOL-PERP)
+2. 设置限价单:
+   - 买单: 低于当前价 0.05%
+   - 卖单: 高于当前价 0.05%
+3. 等待成交
+
+**收益**:
+- Maker 费率: -0.001%(返佣)
+- 价差利润: 0.05-0.1%
+
+**步骤 3: JIT 流动性提供**(高级)
+
+**什么是 JIT?**
+- 当有大单即将成交时
+- 做市商快速插入流动性
+- 赚取该笔交易的费用
+
+**使用 Drift SDK**:
+
+```typescript
+import { DriftClient, Wallet } from '@drift-labs/sdk';
+import { Connection, Keypair } from '@solana/web3.js';
+
+// 初始化
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+const wallet = new Wallet(Keypair.fromSecretKey(YOUR_SECRET_KEY));
+
+const driftClient = new DriftClient({
+  connection,
+  wallet,
+  env: 'mainnet-beta',
+});
+
+await driftClient.subscribe();
+
+// 监听大单
+driftClient.eventEmitter.on('orderFill', async (event) => {
+  const fillSize = event.baseAssetAmountFilled;
+
+  // 如果是大单(>$50K)
+  if (fillSize > 50000) {
+    console.log('检测到大单,提供 JIT 流动性');
+
+    // 快速挂单
+    await driftClient.placePerpOrder({
+      marketIndex: 0,  // SOL-PERP
+      orderType: 'limit',
+      direction: 'long',
+      baseAssetAmount: fillSize * 0.5,
+      price: event.fillPrice * 0.999,  // 略低于成交价
+      postOnly: false,
+    });
+  }
+});
+\`\`\`
+
+**步骤 4: 自动做市机器人**
+
+**简单做市脚本**:
+
+```typescript
+async function marketMake(marketIndex: number, spread: number) {
+  // 获取当前价格
+  const market = driftClient.getPerpMarketAccount(marketIndex);
+  const oraclePrice = market.amm.lastOraclePrice;
+
+  // 计算买卖价
+  const bidPrice = oraclePrice * (1 - spread);
+  const askPrice = oraclePrice * (1 + spread);
+
+  // 取消旧订单
+  await driftClient.cancelAllOrders();
+
+  // 挂新订单
+  await driftClient.placePerpOrder({
+    marketIndex,
+    orderType: 'limit',
+    direction: 'long',
+    baseAssetAmount: 1000,  // $1000
+    price: bidPrice,
+    postOnly: true,  // 确保 Maker
+  });
+
+  await driftClient.placePerpOrder({
+    marketIndex,
+    orderType: 'limit',
+    direction: 'short',
+    baseAssetAmount: 1000,
+    price: askPrice,
+    postOnly: true,
+  });
+
+  console.log(`挂单: Buy ${bidPrice} | Sell ${askPrice}`);
+}
+
+// 每 5 秒更新一次
+setInterval(() => {
+  marketMake(0, 0.0005);  // SOL-PERP, 0.05% 价差
+}, 5000);
+\`\`\`
+
+---
+
+## 💰 收益案例
+
+### 案例 1: 手动做市
+
+**投资**: $5,000 USDC
+
+**操作**:
+- 双边挂单,价差 0.1%
+- 日成交 $50,000
+
+**收益**:
+\`\`\`
+日返佣 = $50K × 0.001% = $0.5
+日价差 = $50K/2 × 0.1% = $25
+日总计 = $25.5
+
+年化 = $25.5 × 365 / $5K = 186%
+\`\`\`
+
+**Gas 成本**(可忽略):
+- 每笔 < $0.001
+- 日均 100 笔 = $0.1
+
+---
+
+### 案例 2: JIT 流动性
+
+**投资**: $20,000
+
+**策略**: 专注捕捉大单
+
+**收益**(假设日均捕捉 5 笔大单):
+\`\`\`
+每笔大单 = $100K
+JIT 费用 = 0.02%(Drift 特殊奖励)
+单笔收益 = $100K × 0.02% = $20
+
+日收益 = $20 × 5 = $100
+年化 = $100 × 365 / $20K = 182.5%
+\`\`\`
+
+---
+
+## 🔥 高级策略
+
+### 策略 1: 多交易对分散
+
+**分散风险**:
+- SOL-PERP: 40% 资金
+- BTC-PERP: 30%
+- ETH-PERP: 20%
+- 山寨币: 10%(高价差)
+
+### 策略 2: 结合 AMM 池
+
+**组合收益**:
+- 70% 资金做市
+- 30% 资金存 Drift 的 AMM 池
+- 双重收益
+
+### 策略 3: 波动率交易
+
+**动态调整**:
+- 高波动(VIX > 30): 加宽价差到 0.2%
+- 低波动(VIX < 20): 缩小价差到 0.03%
+
+---
+
+## ⚠️ 风险提示
+
+### 主要风险
+
+**1. Solana 网络风险**:
+- 历史上曾多次宕机
+- 拥堵时交易失败
+
+**2. 永续合约风险**:
+- 持仓有爆仓风险
+- 需要控制杠杆
+
+**3. 智能合约风险**:
+- Drift 合约相对新(2021 年)
+- 存在未知漏洞风险
+
+**4. 流动性风险**:
+- 小币种流动性差
+- 大单可能无法成交
+
+### 风险缓解
+
+**分散投资**:
+- 不超过总资金 20% 在 Drift
+
+**监控网络**:
+- 关注 Solana 网络状态
+- 异常时暂停交易
+
+**严格止损**:
+- 设置止损价位
+- 避免极端行情爆仓
+
+---
+
+## 📊 Drift vs 其他平台
+
+| 平台 | 链 | Gas 费 | 确认速度 | APY | 风险 |
+|------|-----|-------|---------|-----|------|
+| dYdX | StarkEx | $0.01 | 10-30s | 15-40% | 中 |
+| Hyperliquid | 自有 L1 | ~$0 | 20ms | 25-60% | 中 |
+| **Drift** | **Solana** | **<$0.001** | **400ms** | **20-70%** | **中高** |
+
+**Drift 优势**: Gas 最低,速度快,Solana 生态原生
+
+---
+
+## ❓ 常见问题
+
+**Q1: Drift 安全吗?**
+> 代码经过审计,但 Solana 链有宕机历史。建议不要投入过多资金。
+
+**Q2: 需要懂 Rust 吗?**
+> 不需要。使用 Drift SDK(TypeScript)即可,或直接在界面手动做市。
+
+**Q3: JIT 流动性竞争激烈吗?**
+> 是的。需要低延迟节点和快速策略才能竞争。
+
+**Q4: Drift 有代币吗?**
+> 没有原生代币,但可能未来发行(潜在空投机会)。
+
+---
+
+## 🎓 总结
+
+Drift Protocol 是 Solana 生态的做市优选:
+
+**核心优势**:
+1. **极低成本**: Gas < $0.001
+2. **高性能**: 亚秒级确认
+3. **JIT 机制**: 额外收益机会
+
+**适合人群**:
+- Solana 生态用户
+- 追求低成本做市
+- 有一定编程基础
+
+**不适合**:
+- 无法承受 Solana 宕机风险
+- 完全新手
+- 大资金(流动性限制)
+
+**推荐**: Solana 用户可作为主力做市平台,年化 20-70%。
+
+Drift 做市,Solana 生态之光!⚡
+`,
+
+  steps: [
+    { step_number: 1, title: '准备 USDC', description: '跨链桥接 USDC 到 Solana,准备 SOL 支付 Gas。', estimated_time: '30 分钟' },
+    { step_number: 2, title: '连接 Drift', description: '访问 app.drift.trade,连接 Phantom 钱包并存入资金。', estimated_time: '15 分钟' },
+    { step_number: 3, title: '手动做市', description: '小资金可直接在界面挂限价单做市。', estimated_time: '30 分钟' },
+    { step_number: 4, title: '开发自动策略', description: '(可选)使用 Drift SDK 编写自动做市脚本。', estimated_time: '1-2 天' },
+    { step_number: 5, title: '监控与优化', description: '每日监控成交、收益,优化价差和币种选择。', estimated_time: '每日 1 小时' },
+  ],
+};
+
+// ===== 12.8 ApeX Protocol 链上订单簿 =====
+const STRATEGY_12_8 = {
+  title: 'ApeX Protocol 链上订单簿 - 跨链永续合约做市',
+  slug: 'orderbook-12-8-apex-protocol-orderbook-market-making',
+  summary: '在 ApeX Protocol 做跨链永续合约市(支持以太坊、Arbitrum、Polygon),享受链上订单簿透明性 + CEX 级性能,年化 15-50% APY,StarkEx 技术加持。',
+
+  category: 'orderbook',
+  category_l1: 'derivatives',
+  category_l2: '订单簿做市',
+
+  difficulty_level: 3,
+  risk_level: 3,
+
+  apy_min: 15,
+  apy_max: 50,
+  threshold_capital: '5000 美元起',
+  threshold_capital_min: 5000,
+  time_commitment: '初始设置 2 小时,每日监控 1 小时',
+  time_commitment_minutes: 150,
+  threshold_tech_level: 'intermediate',
+
+  content: `> **适合人群**: 链上交易者,跨链做市者
+> **阅读时间**: 约 8 分钟
+> **关键词**: ApeX Protocol / StarkEx / 链上订单簿 / 跨链
+
+---
+
+## 🎯 什么是 ApeX Protocol?
+
+### 核心特性
+
+**StarkEx 驱动的去中心化永续合约**:
+- 链上订单簿(透明可验证)
+- 零 Gas 费交易(Layer 2)
+- 支持多链(Ethereum, Arbitrum, Polygon)
+- 20+ 交易对
+
+**与 dYdX 的区别**:
+- dYdX 使用排序器(中心化)
+- ApeX 完全链上撮合(去中心化)
+
+---
+
+## 📋 ApeX 做市指南
+
+### 准备工作
+
+**资产准备**:
+- USDC(任意支持链)
+- 最低 $5,000 起
+- 预存少量 ETH/MATIC(存款 Gas)
+
+**账户设置**:
+1. 访问 pro.apex.exchange
+2. 连接钱包(MetaMask)
+3. 选择链并存入 USDC
+
+### 操作流程
+
+**步骤 1: 存入资金**
+
+```bash
+# 支持链
+- Ethereum(主网,Gas 贵)
+- Arbitrum(推荐,Gas 低)
+- Polygon(也可用)
+
+# 存入流程
+1. 连接钱包
+2. 选择 USDC 金额
+3. 确认交易(需支付 L1 Gas)
+4. 等待 5-10 分钟到账
+\`\`\`
+
+**步骤 2: 手动做市**
+
+**在 ApeX 界面挂单**:
+1. 选择交易对(如 BTC-USDC)
+2. 挂限价买单(低于市价 0.05%)
+3. 挂限价卖单(高于市价 0.05%)
+4. 等待成交
+
+**费率**:
+- Maker: -0.002%(返佣)
+- Taker: 0.050%
+
+**步骤 3: API 做市**(高级)
+
+**使用 ApeX SDK**:
+
+```python
+from apex_client import ApexClient
+import time
+
+# 初始化
+client = ApexClient(
+    private_key='YOUR_PRIVATE_KEY',
+    stark_key='YOUR_STARK_KEY',
+    network='mainnet',
+)
+
+# 参数
+symbol = 'BTC-USDC'
+spread = 0.0005  # 0.05%
+size = '0.01'  # 0.01 BTC
+
+def get_mid_price(symbol):
+    """获取中间价"""
+    ticker = client.get_ticker(symbol)
+    return (float(ticker['bid']) + float(ticker['ask'])) / 2
+
+def place_orders(symbol, mid_price, spread, size):
+    """挂双边订单"""
+    # 取消旧订单
+    client.cancel_all_orders(symbol)
+
+    # 计算价格
+    bid_price = mid_price * (1 - spread)
+    ask_price = mid_price * (1 + spread)
+
+    # 挂单
+    client.create_order(
+        symbol=symbol,
+        side='BUY',
+        type='LIMIT',
+        size=size,
+        price=str(bid_price),
+        post_only=True,
+    )
+
+    client.create_order(
+        symbol=symbol,
+        side='SELL',
+        type='LIMIT',
+        size=size,
+        price=str(ask_price),
+        post_only=True,
+    )
+
+    print(f'挂单: Buy {bid_price} | Sell {ask_price}')
+
+# 主循环
+while True:
+    try:
+        mid = get_mid_price(symbol)
+        place_orders(symbol, mid, spread, size)
+        time.sleep(5)
+    except Exception as e:
+        print(f'Error: {e}')
+        time.sleep(10)
+\`\`\`
+
+---
+
+## 💰 收益案例
+
+### 案例 1: 单交易对做市
+
+**投资**: $10,000
+
+**参数**:
+- Maker 返佣: -0.002%
+- 价差: 0.05%
+- 日成交 $200,000
+
+**收益**:
+\`\`\`
+日返佣 = $200K × 0.002% = $4
+日价差 = $200K/2 × 0.05% = $50
+日总计 = $54
+
+年化 = $54 × 365 / $10K = 197%
+\`\`\`
+
+**Gas 成本**: 零(Layer 2)
+
+---
+
+### 案例 2: 多链分散
+
+**资金分配**:
+- Arbitrum: $7,000(主力)
+- Polygon: $3,000(备用)
+
+**优势**:
+- 避免单链风险
+- 跨链套利机会
+
+---
+
+## 🔥 高级策略
+
+### 策略 1: 跨链套利
+
+**利用价差**:
+1. 监控 ApeX 多链价格
+2. 发现价差时跨链套利
+3. 需要快速跨链桥
+
+### 策略 2: 代币激励
+
+**APEX 代币奖励**:
+- 交易挖矿赚 APEX
+- Maker 额外奖励
+- APEX 可 Stake 获得额外收益
+
+**查看奖励**:
+```python
+# 获取 APEX 余额
+rewards = client.get_rewards()
+apex_balance = rewards['APEX']['balance']
+print(f'APEX 奖励: {apex_balance}')
+\`\`\`
+
+### 策略 3: 长尾币种
+
+**高价差币种**:
+- 主流币(BTC, ETH): 价差 0.05%
+- 山寨币(DOGE, SHIB): 价差 0.2-0.5%
+- 收益更高但风险也大
+
+---
+
+## ⚠️ 风险提示
+
+### 主要风险
+
+**1. StarkEx 风险**:
+- Layer 2 技术相对新
+- 提款可能延迟(强制提款需 7 天)
+
+**2. 流动性风险**:
+- ApeX 流动性不如 dYdX
+- 大单可能冲击价格
+
+**3. 合约风险**:
+- 永续合约有爆仓风险
+- 需要严格风控
+
+**4. 跨链风险**:
+- 跨链桥可能失败
+- 资产损失风险
+
+### 风险缓解
+
+**提款策略**:
+- 定期提款,不要长期放平台
+- 使用快速提款(支付额外费用)
+
+**流动性管理**:
+- 优先选择主流币种
+- 避免在流动性差时大额交易
+
+---
+
+## 📊 ApeX vs 其他平台
+
+| 平台 | 去中心化 | Gas 费 | 流动性 | APY | 风险 |
+|------|---------|-------|--------|-----|------|
+| dYdX | 中(排序器) | $0.01 | 高 | 15-40% | 中 |
+| Binance | 中心化 | - | 极高 | 30-100% | 低 |
+| **ApeX** | **高(链上)** | **$0** | **中** | **15-50%** | **中** |
+
+**ApeX 优势**: 去中心化程度高,Gas 免费,跨链支持
+
+---
+
+## ❓ 常见问题
+
+**Q1: ApeX 和 dYdX 哪个更好?**
+> dYdX 流动性更高,适合大资金。ApeX 更去中心化,适合追求链上透明性的用户。
+
+**Q2: 提款需要多久?**
+> 正常提款 1-3 小时。强制提款(无需平台同意)需 7 天。
+
+**Q3: 如何获得 Stark Key?**
+> 首次连接钱包时自动生成,需要签名确认。
+
+**Q4: APEX 代币有用吗?**
+> 可 Stake 获得交易费分红,也可用于治理投票。
+
+---
+
+## 🎓 总结
+
+ApeX Protocol 是去中心化的做市选择:
+
+**核心优势**:
+1. **链上透明**: StarkEx 技术
+2. **零 Gas**: Layer 2 优势
+3. **跨链支持**: 多链灵活
+
+**适合人群**:
+- 追求去中心化
+- 链上交易者
+- 中等资金($5K-$50K)
+
+**不适合**:
+- 大资金(流动性限制)
+- 追求极致性能
+- 完全新手
+
+**推荐**: 作为去中心化做市的补充,配置 10-20% 资金。
+
+ApeX 做市,去中心化之选!🔗
+`,
+
+  steps: [
+    { step_number: 1, title: '选择链并存入', description: '选择 Arbitrum 或 Polygon,存入 USDC。', estimated_time: '30 分钟' },
+    { step_number: 2, title: '生成 Stark Key', description: '首次使用需要生成 Stark Key(签名确认)。', estimated_time: '5 分钟' },
+    { step_number: 3, title: '手动做市', description: '小资金可直接在界面挂限价单。', estimated_time: '30 分钟' },
+    { step_number: 4, title: '自动化做市', description: '(可选)使用 ApeX SDK 编写自动做市脚本。', estimated_time: '1-2 天' },
+    { step_number: 5, title: '监控与提款', description: '每日监控收益,定期提款到钱包。', estimated_time: '每日 1 小时' },
+  ],
+};
+
+// ===== 上传逻辑 =====
+async function getAuthToken() {
+  const response = await axios.post(`${DIRECTUS_URL}/auth/login`, {
+    email: 'the_uk1@outlook.com',
+    password: 'Mygcdjmyxzg2026!',
+  });
+  return response.data.data.access_token;
+}
+
+async function addStrategies() {
+  try {
+    const token = await getAuthToken();
+    const strategies = [STRATEGY_12_7, STRATEGY_12_8];
+
+    console.log('\n开始创建 12.7 和 12.8 策略...\n');
+
+    for (let i = 0; i < strategies.length; i++) {
+      const strategy = {
+        ...strategies[i],
+        status: 'published',
+        is_featured: true,
+        view_count: 0,
+        bookmark_count: 0,
+        published_at: new Date().toISOString(),
+      };
+
+      const response = await axios.post(
+        `${DIRECTUS_URL}/items/strategies`,
+        strategy,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      console.log(`✅ [${i + 1}/2] ${strategy.title}`);
+      console.log(`   ID: ${response.data.data.id}`);
+      console.log(`   Slug: ${response.data.data.slug}\n`);
+    }
+
+    console.log('🎉 创建完成！');
+    console.log('访问: http://localhost:3000/strategies?category=orderbook\n');
+  } catch (error) {
+    console.error('\n❌ 创建失败:', error.response?.data || error.message);
+  }
+}
+
+addStrategies();

@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   },
 
   // Production optimizations
-  swcMinify: true,
   compress: true,
 };
 

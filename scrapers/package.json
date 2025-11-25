@@ -1,0 +1,27 @@
+{
+  "name": "playnew-gossip-scrapers",
+  "version": "1.0.0",
+  "description": "Automated gossip scrapers for crypto news",
+  "main": "index.js",
+  "scripts": {
+    "twitter": "node gossip-scraper-twitter.js",
+    "telegram": "node gossip-scraper-telegram.js",
+    "onchain": "node gossip-scraper-onchain.js",
+    "all": "concurrently \"npm run twitter\" \"npm run telegram\" \"npm run onchain\"",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js",
+    "pm2:logs": "pm2 logs"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "openai": "^4.20.0",
+    "node-telegram-bot-api": "^0.64.0",
+    "ethers": "^6.9.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "pm2": "^5.3.0"
+  }
+}
