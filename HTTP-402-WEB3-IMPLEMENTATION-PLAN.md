@@ -1819,3 +1819,13 @@ psql -h xxx.supabase.co -U postgres -d postgres -c "
 **文档版本**: v1.0
 **创建时间**: 2025-11-19
 **预计完成时间**: 2025-12-13 (25 天后)
+
+
+
+
+ubuntu@ip-172-26-10-140:/var/www/playnew$ echo "DIRECTUS_KEY=$(openssl rand -base64 32)"
+DIRECTUS_KEY=IZUqJyFcNs+bJ2CLvIILy71WQIakEE/pG2ImlqwBkmk=
+ubuntu@ip-172-26-10-140:/var/www/playnew$ echo "DIRECTUS_SECRET=$(openssl rand -base64 32)"
+DIRECTUS_SECRET=9YUDcVH4lUp30q6AtFYDqWDNlsnQdi9G5+w8ho5UZRk=
+ubuntu@ip-172-26-10-140:/var/www/playnew$ echo "MEILISEARCH_MASTER_KEY=$(openssl rand -base64 32)"
+MEILISEARCH_MASTER_KEY=fOpSDm+eVVhFED90UzqnV3sPKYuLlcYPK+5IvK5yuu8=
